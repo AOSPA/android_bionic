@@ -59,7 +59,7 @@ long lrintl(long double a1) { return lrint(a1); }
 long long llroundl(long double a1) { return llround(a1); }
 long lroundl(long double a1) { return lround(a1); }
 long double modfl(long double a1, long double* a2) { return modf(a1, (double*) a2); }
-long double powl(long double a1, long double a2) { return pow(a1, a2); }
+long double powl(long double a1, long double a2) { return powl(a1, a2); }
 long double rintl(long double a1) { return rint(a1); }
 long double roundl(long double a1) { return round(a1); }
 long double scalbnl(long double a1, int a2) { return scalbn(a1, a2); }
