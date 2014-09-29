@@ -67,7 +67,6 @@
 ENTRY(MEMCPY_BASE)
 MEMCPY_BASE_ALIGNED:
        // .cfi_startproc
-	.save {r0, r9, r10, lr}
        // .cfi_def_cfa_offset 8
 	//.cfi_rel_offset r0, 0
 	//.cfi_rel_offset lr, 4
