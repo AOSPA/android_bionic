@@ -211,4 +211,3 @@ MEMCPY_BASE_ALIGNED:
 	bx	lr
         //.cfi_endproc
 END(MEMCPY_BASE)
-
