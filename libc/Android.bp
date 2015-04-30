@@ -1040,6 +1040,7 @@ cc_library_static {
             },
             krait: {
                 srcs: [
+                    "arch-arm/krait/bionic/memcmp.S",
                     "arch-arm/krait/bionic/memcpy.S",
                     "arch-arm/krait/bionic/memset.S",
                     "arch-arm/cortex-a15/bionic/strcmp.S",
@@ -1055,6 +1056,7 @@ cc_library_static {
                     "arch-arm/denver/bionic/memmove.S",
                 ],
                 exclude_srcs: [
+                    "arch-arm/generic/bionic/memcmp.S",
                     "arch-arm/generic/bionic/memcpy.S",
                     "arch-arm/generic/bionic/memset.S",
                     "arch-arm/generic/bionic/strcmp.S",
