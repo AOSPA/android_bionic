@@ -528,4 +528,23 @@ endif
 endif # x86 x86_64
 endif # linux-x86
 
+# -----------------------------------------------------------------------------
+# Additional executable needed for LD_LIBRARY_PATH tests
+# -----------------------------------------------------------------------------
+
+test_ld_library_path_src_files := \
+    empty_program.cpp
+
+test_ld_library_path_shared_libraries := \
+    libtest_ld_library_path
+
+
+module := test_ld_library_path
+module_tag := optional
+build_target := NATIVE_TEST
+build_type := target
+include $(LOCAL_PATH)/Android.build.mk
+build_type := host
+include $(LOCAL_PATH)/Android.build.mk
+
 include $(call first-makefiles-under,$(LOCAL_PATH))
