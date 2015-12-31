@@ -28,9 +28,6 @@
 
 #include "utils.h"
 
-#define ASSERT_SUBSTR(needle, haystack) \
-    ASSERT_PRED_FORMAT2(::testing::IsSubstring, needle, haystack)
-
 
 static bool g_called = false;
 extern "C" void DlSymTestFunction() {
@@ -359,7 +356,7 @@ TEST(dlfcn, dlopen_check_order_reloc_siblings) {
   ASSERT_TRUE(handle == nullptr);
 #ifdef __BIONIC__
   // TODO: glibc returns nullptr on dlerror() here. Is it bug?
-  ASSERT_STREQ("dlopen failed: library \"libtest_check_order_reloc_siblings.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
+  ASSERT_SUBSTR("libtest_check_order_reloc_siblings.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
 #endif
 
   handle = dlopen("libtest_check_order_reloc_siblings.so", RTLD_NOW | RTLD_LOCAL);
@@ -424,7 +421,7 @@ TEST(dlfcn, dlopen_check_order_reloc_grandchild) {
   ASSERT_TRUE(handle == nullptr);
 #ifdef __BIONIC__
   // TODO: glibc returns nullptr on dlerror() here. Is it bug?
-  ASSERT_STREQ("dlopen failed: library \"libtest_check_order_reloc_siblings.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
+  ASSERT_SUBSTR("libtest_check_order_reloc_siblings.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
 #endif
 
   handle = dlopen("libtest_check_order_reloc_siblings.so", RTLD_NOW | RTLD_LOCAL);
@@ -470,7 +467,7 @@ TEST(dlfcn, dlopen_check_order_reloc_nephew) {
   ASSERT_TRUE(handle == nullptr);
 #ifdef __BIONIC__
   // TODO: glibc returns nullptr on dlerror() here. Is it bug?
-  ASSERT_STREQ("dlopen failed: library \"libtest_check_order_reloc_siblings.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
+  ASSERT_SUBSTR("libtest_check_order_reloc_siblings.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
 #endif
 
   handle = dlopen("libtest_check_order_reloc_siblings.so", RTLD_NOW | RTLD_LOCAL);
@@ -545,7 +542,7 @@ TEST(dlfcn, dlopen_check_order_reloc_main_executable) {
   ASSERT_TRUE(handle == nullptr);
 #ifdef __BIONIC__
   // TODO: glibc returns nullptr on dlerror() here. Is it bug?
-  ASSERT_STREQ("dlopen failed: library \"libtest_check_order_reloc_root.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
+  ASSERT_SUBSTR("libtest_check_order_reloc_root.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
 #endif
 
   handle = dlopen("libtest_check_order_reloc_root.so", RTLD_NOW | RTLD_LOCAL);
@@ -624,7 +621,7 @@ TEST(dlfcn, dlopen_check_loop) {
   handle = dlopen("libtest_with_dependency_loop.so", RTLD_NOW | RTLD_NOLOAD);
   ASSERT_TRUE(handle == nullptr);
 #ifdef __BIONIC__
-  ASSERT_STREQ("dlopen failed: library \"libtest_with_dependency_loop.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
+  ASSERT_SUBSTR("libtest_with_dependency_loop.so\" wasn't loaded and RTLD_NOLOAD prevented it", dlerror());
 #else
   // TODO: glibc returns nullptr on dlerror() here. Is it bug?
   ASSERT_TRUE(dlerror() == nullptr);
@@ -722,7 +719,7 @@ TEST(dlfcn, dlopen_failure) {
   void* self = dlopen("/does/not/exist", RTLD_NOW);
   ASSERT_TRUE(self == nullptr);
 #if defined(__BIONIC__)
-  ASSERT_STREQ("dlopen failed: library \"/does/not/exist\" not found", dlerror());
+  ASSERT_SUBSTR("\"/does/not/exist\" not found", dlerror());
 #else
   ASSERT_STREQ("/does/not/exist: cannot open shared object file: No such file or directory", dlerror());
 #endif
@@ -837,13 +834,14 @@ TEST(dlfcn, dlopen_executable_by_absolute_path) {
 }
 
 #if defined(__LP64__)
-#define PATH_TO_SYSTEM_LIB "/system/lib64/"
+#define LIB_DIR "/lib64"
 #else
-#define PATH_TO_SYSTEM_LIB "/system/lib/"
+#define LIB_DIR "/lib"
 #endif
-#define PATH_TO_LIBC PATH_TO_SYSTEM_LIB "libc.so"
 
 TEST(dlfcn, dladdr_libc) {
+  const char* android_root = getenv("ANDROID_ROOT");
+  const std::string system_root = android_root ? android_root : "/system";
 #if defined(__BIONIC__)
   Dl_info info;
   void* addr = reinterpret_cast<void*>(puts); // well-known libc function
@@ -851,7 +849,7 @@ TEST(dlfcn, dladdr_libc) {
 
   // /system/lib is symlink when this test is executed on host.
   char libc_realpath[PATH_MAX];
-  ASSERT_TRUE(realpath(PATH_TO_LIBC, libc_realpath) == libc_realpath);
+  ASSERT_TRUE(realpath((system_root + LIB_DIR "/libc.so").c_str(), libc_realpath) == libc_realpath);
 
   ASSERT_STREQ(libc_realpath, info.dli_fname);
   // TODO: add check for dfi_fbase
@@ -1106,7 +1104,9 @@ TEST(dlfcn, dt_runpath_smoke) {
 }
 
 TEST(dlfcn, dt_runpath_absolute_path) {
-  void* handle = dlopen(PATH_TO_SYSTEM_LIB "libtest_dt_runpath_d.so", RTLD_NOW);
+  const char* android_root = getenv("ANDROID_ROOT");
+  const std::string system_root = android_root ? android_root : "/system";
+  void* handle = dlopen((system_root + LIB_DIR "/libtest_dt_runpath_d.so").c_str(), RTLD_NOW);
   ASSERT_TRUE(handle != nullptr) << dlerror();
 
   typedef void *(* dlopen_b_fn)();
