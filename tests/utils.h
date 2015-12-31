@@ -32,6 +32,9 @@
 
 #include "private/ScopeGuard.h"
 
+#define ASSERT_SUBSTR(needle, haystack) \
+    ASSERT_PRED_FORMAT2(::testing::IsSubstring, needle, haystack)
+
 struct map_record {
   uintptr_t addr_start;
   uintptr_t addr_end;

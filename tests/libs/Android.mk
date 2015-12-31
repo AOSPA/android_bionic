@@ -214,6 +214,16 @@ module := libtest_nodelete_dt_flags_1
 include $(LOCAL_PATH)/Android.build.testlib.mk
 
 # -----------------------------------------------------------------------------
+# Library used by dlfcn LD_LIBRARY_PATH test
+# -----------------------------------------------------------------------------
+libtest_ld_library_path_src_files := \
+    dlopen_testlib_simple.cpp
+
+libtest_ld_library_path_relative_path := test_ld_library_path
+module := libtest_ld_library_path
+include $(LOCAL_PATH)/Android.build.testlib.mk
+
+# -----------------------------------------------------------------------------
 # Build test helper libraries for linker namespaces
 # -----------------------------------------------------------------------------
 include $(LOCAL_PATH)/Android.build.linker_namespaces.mk
