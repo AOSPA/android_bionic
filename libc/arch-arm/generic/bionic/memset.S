@@ -39,7 +39,7 @@
 
 ENTRY(__memset_chk)
         cmp         r2, r3
-        bls         done
+        bls         memset
 
         ldr         r0, error_message
         ldr         r1, error_code
@@ -52,14 +52,6 @@ error_message:
         .word       error_string-(1b+8)
 
 END(__memset_chk)
-
-ENTRY(bzero)
-        mov     r2, r1
-        mov     r1, #0
-
-done:
-        // Fall through to memset...
-END(bzero)
 
 ENTRY(memset)
         /* compute the offset to align the destination

@@ -41,7 +41,7 @@
 
 ENTRY(__memset_chk)
         cmp         r2, r3
-        bls         .L_done
+        bls         memset
 
         // Preserve lr for backtrace.
         push        {lr}
@@ -58,13 +58,6 @@ error_code:
 error_message:
         .word       error_string-(1b+8)
 END(__memset_chk)
-
-ENTRY(bzero)
-        mov         r2, r1
-        mov         r1, #0
-.L_done:
-        // Fall through to memset...
-END(bzero)
 
 ENTRY(memset)
         mov         r3, r0
