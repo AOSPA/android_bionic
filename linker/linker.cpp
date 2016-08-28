@@ -3923,11 +3923,11 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t& 
 
 #if !defined(__LP64__)
   if (has_text_relocations) {
-    // Fail if app is targeting sdk version > 22
+    // Warn if app is targeting sdk version > 22
     if (get_application_target_sdk_version() > 22) {
       PRINT("%s: has text relocations", get_realpath());
-      DL_ERR("%s: has text relocations", get_realpath());
-      return false;
+      DL_WARN("%s: has text relocations", get_realpath());
+      //return false;
     }
     // Make segments writable to allow text relocations to work properly. We will later call
     // phdr_table_protect_segments() after all of them are applied.
