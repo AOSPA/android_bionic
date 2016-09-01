@@ -621,6 +621,11 @@ ifeq ($(TARGET_ARCH),$(filter $(TARGET_ARCH),mips mips64))
   use_clang := false
 endif
 
+# Disable clang for targets who specify it
+ifeq ($(TARGET_BIONIC_USE_CLANG),false)
+  use_clang := false
+endif
+
 ifeq ($(use_clang),)
   use_clang := true
 endif
