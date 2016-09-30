@@ -1735,6 +1735,9 @@ cc_library {
     shared_libs: ["libdl"],
     whole_static_libs: ["libc_common", "libjemalloc"],
 
+    // Don't re-export new/delete and friends, even if the compiler really wants to.
+    version_script: "libc.map",
+
     // We'd really like to do this for all architectures, but since this wasn't done
     // before, these symbols must continue to be exported on LP32 for binary
     // compatibility.
@@ -1751,14 +1754,6 @@ cc_library {
             //TODO: This is to work around b/24465209. Remove after root cause is fixed
             ldflags: ["-Wl,--hash-style=both"],
 
-            // Don't re-export new/delete and friends, even if the compiler really wants to.
-            version_script: "libc.arm.map",
-            product_variables: {
-                brillo: {
-                    version_script: "libc.arm.brillo.map",
-                },
-            },
-
             shared: {
                 srcs: ["arch-arm/bionic/exidx_dynamic.c"],
             },
@@ -1772,38 +1767,14 @@ cc_library {
                 "arch-arm/bionic/atexit_legacy.c",
             ],
         },
-        arm64: {
-            // Don't re-export new/delete and friends, even if the compiler really wants to.
-            version_script: "libc.arm64.map",
-        },
-        mips: {
-            // Don't re-export new/delete and friends, even if the compiler really wants to.
-            version_script: "libc.mips.map",
-            product_variables: {
-                brillo: {
-                    version_script: "libc.mips.brillo.map",
-                },
-            },
-        },
-        mips64: {
-            // Don't re-export new/delete and friends, even if the compiler really wants to.
-            version_script: "libc.mips64.map",
-        },
+version_script: "libc.x86_64.map",
+
         x86: {
             //TODO: This is to work around b/24465209. Remove after root cause is fixed
             ldflags: ["-Wl,--hash-style=both"],
-
-            // Don't re-export new/delete and friends, even if the compiler really wants to.
-            version_script: "libc.x86.map",
-            product_variables: {
-                brillo: {
-                    version_script: "libc.x86.brillo.map",
-                },
-            },
         },
         x86_64: {
-            // Don't re-export new/delete and friends, even if the compiler really wants to.
-            version_script: "libc.x86_64.map",
+            clang: use_clang_x86_64,
         },
     },
 }
