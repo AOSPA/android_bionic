@@ -29,4 +29,4 @@ libc_bionic_src_files_arm += \
 
 # Use cortex-a53 memset
 libc_bionic_src_files_arm += \
-    arch-arm/kryo/bionic/memset.S \
+    arch-arm/cortex-a7/bionic/memset.S \
