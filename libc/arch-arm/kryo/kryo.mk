@@ -14,9 +14,7 @@ libc_bionic_src_files_exclude_arm += \
 libc_bionic_src_files_arm += \
     arch-arm/kryo/bionic/memcpy.S \
     arch-arm/kryo/bionic/memmove.S \
-    arch-arm/krait/bionic/strcmp.S \
-    bionic/__strcat_chk.cpp \
-    bionic/__strcpy_chk.cpp \
+    arch-arm/krait/bionic/strcmp.S
 
 # Use cortex-a15 versions of strcat/strcpy/strlen and standard memmove
 libc_bionic_src_files_arm += \
