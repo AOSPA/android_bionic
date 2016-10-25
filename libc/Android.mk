@@ -1216,6 +1216,10 @@ LOCAL_SRC_FILES_arm += \
 LOCAL_CFLAGS := $(libc_common_cflags) \
     -DLIBC_STATIC \
 
+ifeq ($(BOARD_USES_LIBC_WRAPPER),true)
+LOCAL_CFLAGS += -DUSE_WRAPPER
+endif
+
 LOCAL_WHOLE_STATIC_LIBRARIES := \
     libc_bionic_ndk \
     libc_cxa \
@@ -1248,7 +1252,11 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(libc_common_src_files)
-LOCAL_CFLAGS := $(libc_common_cflags)
+LOCAL_CFLAGS := $(libc_common_cflags) \
+
+ifeq ($(BOARD_USES_LIBC_WRAPPER),true)
+LOCAL_CFLAGS += -DUSE_WRAPPER
+endif
 
 LOCAL_CONLYFLAGS := $(libc_common_conlyflags)
 LOCAL_CPPFLAGS := $(libc_common_cppflags)
