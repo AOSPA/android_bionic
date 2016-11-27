@@ -1,5 +1,5 @@
 /*
- * Copyright 2015, The Android Open Source Project
+ * Copyright 2016, Paranoid Android
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
+#include <float.h>
 #include <private/bionic_asm.h>
 
 ENTRY(nearbyint)
-  frinti d0, d0
-  ret
+    vmov        d0, r0, r1
+    vrintr.f64  d0, d0
+    vmov        r0, r1, d0
+    bx          lr
 END(nearbyint)
 
 ENTRY(nearbyintf)
-  frinti s0, s0
-  ret
+    vmov        s0, r0
+    vrintr.f32  s0, s0
+    vmov        r0, s0
+    bx          lr
 END(nearbyintf)
 
 ALIAS_SYMBOL(nearbyintl, nearbyint);
