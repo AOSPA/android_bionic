@@ -281,13 +281,28 @@ endif
 # Use the C version on armv7-a since it doesn't support neon instructions.
 ifneq ($(arch_variant),armv7-a)
 LOCAL_SRC_FILES_arm += \
-    arm/sqrt.S \
+    arm/ceil.S \
     arm/floor.S \
+    arm/nearbyint.S \
+    arm/rint.S \
+    arm/round.S \
+    arm/sqrt.S \
+    arm/trunc.S \
 
 LOCAL_SRC_FILES_EXCLUDE_arm += \
     upstream-freebsd/lib/msun/src/e_sqrt.c \
     upstream-freebsd/lib/msun/src/e_sqrtf.c \
+    upstream-freebsd/lib/msun/src/s_ceil.c \
+    upstream-freebsd/lib/msun/src/s_ceilf.c \
     upstream-freebsd/lib/msun/src/s_floor.c \
+    upstream-freebsd/lib/msun/src/s_floorf.c \
+    upstream-freebsd/lib/msun/src/s_nearbyint.c \
+    upstream-freebsd/lib/msun/src/s_rint.c \
+    upstream-freebsd/lib/msun/src/s_rintf.c \
+    upstream-freebsd/lib/msun/src/s_round.c \
+    upstream-freebsd/lib/msun/src/s_roundf.c \
+    upstream-freebsd/lib/msun/src/s_trunc.c \
+    upstream-freebsd/lib/msun/src/s_truncf.c \
 
 endif
 
