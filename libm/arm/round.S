@@ -17,18 +17,16 @@
 #include <float.h>
 #include <private/bionic_asm.h>
 
-ENTRY(floor)
+ENTRY(round)
     vmov        d0, r0, r1
-    vrintm.f64  d0, d0
+    vrinta.f64  d0, d0
     vmov        r0, r1, d0
     bx          lr
-END(floor)
+END(round)
 
-ENTRY(floorf)
+ENTRY(roundf)
     vmov        s0, r0
-    vrintm.f32  s0, s0
+    vrinta.f32  s0, s0
     vmov        r0, s0
     bx          lr
-END(floorf)
-
-ALIAS_SYMBOL(floorl, floor);
+END(roundf)

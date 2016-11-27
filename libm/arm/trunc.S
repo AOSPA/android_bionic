@@ -17,18 +17,18 @@
 #include <float.h>
 #include <private/bionic_asm.h>
 
-ENTRY(floor)
+ENTRY(trunc)
     vmov        d0, r0, r1
-    vrintm.f64  d0, d0
+    vrintz.f64  d0, d0
     vmov        r0, r1, d0
     bx          lr
-END(floor)
+END(trunc)
 
-ENTRY(floorf)
+ENTRY(truncf)
     vmov        s0, r0
-    vrintm.f32  s0, s0
+    vrintz.f32  s0, s0
     vmov        r0, s0
     bx          lr
-END(floorf)
+END(truncf)
 
-ALIAS_SYMBOL(floorl, floor);
+ALIAS_SYMBOL(truncl, trunc);
