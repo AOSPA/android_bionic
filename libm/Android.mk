@@ -292,14 +292,17 @@ LOCAL_SRC_FILES_EXCLUDE_arm += \
 ifneq (,$(filter cortex-a53 cortex-a53.a57 kryo denver,$(TARGET_$(combo_2nd_arch_prefix)CPU_VARIANT)))
 LOCAL_SRC_FILES_arm += \
     arm/ceil.S \
+    arm/floor_aarch32.S \
     arm/nearbyint.S \
     arm/rint.S \
     arm/round.S \
     arm/trunc.S \
 
 LOCAL_SRC_FILES_EXCLUDE_arm += \
+    arm/floor.S \
     upstream-freebsd/lib/msun/src/s_ceil.c \
     upstream-freebsd/lib/msun/src/s_ceilf.c \
+    upstream-freebsd/lib/msun/src/s_floorf.c
     upstream-freebsd/lib/msun/src/s_nearbyint.c \
     upstream-freebsd/lib/msun/src/s_rint.c \
     upstream-freebsd/lib/msun/src/s_rintf.c \
