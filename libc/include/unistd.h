@@ -469,12 +469,6 @@ __BIONIC_FORTIFY_INLINE
 ssize_t write(int fd, const void* buf, size_t count) {
     size_t bos = __bos0(buf);
 
-#ifdef USE_WRAPPER
-    if( __propClientDispatchWrite.propWrite ) {
-        __propClientDispatchWrite.propWrite(fd);
-    }
-#endif
-
 #if !defined(__clang__)
 #if 0 /* work around a false positive due to a missed optimization */
     if (__builtin_constant_p(count) && (count > SSIZE_MAX)) {
@@ -483,6 +477,11 @@ ssize_t write(int fd, const void* buf, size_t count) {
 #endif
 
     if (bos == __BIONIC_FORTIFY_UNKNOWN_SIZE) {
+#ifdef USE_WRAPPER
+        if( __propClientDispatchWrite.propWrite ) {
+            __propClientDispatchWrite.propWrite(fd);
+        }
+#endif
         return __write_real(fd, buf, count);
     }
 
@@ -491,6 +490,11 @@ ssize_t write(int fd, const void* buf, size_t count) {
     }
 
     if (__builtin_constant_p(count) && (count <= bos)) {
+#ifdef USE_WRAPPER
+        if( __propClientDispatchWrite.propWrite ) {
+            __propClientDispatchWrite.propWrite(fd);
+        }
+#endif
         return __write_real(fd, buf, count);
     }
 #endif
