@@ -1258,7 +1258,7 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := $(libc_common_src_files)
-LOCAL_CFLAGS := $(libc_common_cflags) \
+LOCAL_CFLAGS := $(libc_common_cflags)
 
 ifeq ($(BOARD_USES_LIBC_WRAPPER),true)
 LOCAL_CFLAGS += -DUSE_WRAPPER
