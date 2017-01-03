@@ -245,11 +245,9 @@ libc_bionic_ndk_src_files := \
     bionic/wmempcpy.cpp \
     bionic/writev.cpp \
 
-ifeq ($(BOARD_USES_LIBC_WRAPPER),true)
 libc_bionic_ndk_src_files += \
     codeaurora/PropClientDispatch.cpp \
-    codeaurora/PropClientDispatchWrite.cpp
-endif
+    codeaurora/PropClientDispatchWrite.cpp \
 
 libc_bionic_src_files :=
 
