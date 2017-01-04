@@ -30,16 +30,7 @@
 #include <unistd.h>
 #include "private/libc_logging.h"
 
-#ifdef USE_WRAPPER
-#include "codeaurora/PropClientDispatchWrite.h"
-#endif
 extern "C" ssize_t __write_chk(int fd, const void* buf, size_t count, size_t buf_size) {
-
-#ifdef USE_WRAPPER
-  if( __propClientDispatchWrite.propWrite ) {
-    __propClientDispatchWrite.propWrite(fd);
-  }
-#endif
   if (__predict_false(count > buf_size)) {
     __fortify_chk_fail("write: prevented read past end of buffer", 0);
   }
