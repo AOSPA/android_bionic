@@ -36,6 +36,7 @@ LOCAL_LDFLAGS := \
     -Wl,--exclude-libs,ALL \
 
 LOCAL_CFLAGS += \
+    -O2 \
     -fno-stack-protector \
     -Wstrict-overflow=5 \
     -fvisibility=hidden \
