@@ -36,10 +36,14 @@ LOCAL_LDFLAGS := \
     -Wl,--exclude-libs,ALL \
 
 LOCAL_CFLAGS += \
+    -O2 \
     -fno-stack-protector \
     -Wstrict-overflow=5 \
     -fvisibility=hidden \
     -Wall -Wextra -Wunused -Werror \
+
+LOCAL_SDCLANG_LTO := true
+LOCAL_SDCLANG_LTO_LDFLAGS := -O2 -fno-stack-protector -fvisibility=hidden
 
 LOCAL_CFLAGS_arm += -D__work_around_b_24465209__
 LOCAL_CFLAGS_x86 += -D__work_around_b_24465209__
