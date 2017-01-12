@@ -42,6 +42,10 @@ LOCAL_CFLAGS += \
     -fvisibility=hidden \
     -Wall -Wextra -Wunused -Werror \
 
+ifeq ($(ARCH_ARM_HAVE_ARMV7A),true)
+LOCAL_CFLAGS += -DARCH_ARM_HAVE_ARMV7A
+endif
+
 LOCAL_CFLAGS_arm += -D__work_around_b_24465209__
 LOCAL_CFLAGS_x86 += -D__work_around_b_24465209__
 

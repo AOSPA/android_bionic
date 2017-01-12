@@ -33,5 +33,9 @@ ENTRY(_start)
   bl __linker_init
 
   /* linker init returns the _entry address in the main image */
+#ifdef ARCH_ARM_HAVE_ARMV7A
+  bx r0
+#else
   mov pc, r0
+#endif
 END(_start)
