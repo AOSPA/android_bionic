@@ -44,7 +44,7 @@ class DebugData;
 
 class TrackData {
  public:
-  TrackData() = default;
+  TrackData();
   virtual ~TrackData() = default;
 
   void GetList(std::vector<const Header*>* list);
@@ -59,6 +59,8 @@ class TrackData {
                size_t* info_size, size_t* total_memory, size_t* backtrace_size);
 
   void DisplayLeaks(DebugData& debug);
+
+  void DumpLeaks(DebugData& debug);
 
   void PrepareFork() { pthread_mutex_lock(&mutex_); }
   void PostForkParent() { pthread_mutex_unlock(&mutex_); }
