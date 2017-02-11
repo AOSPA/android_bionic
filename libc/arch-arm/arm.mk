@@ -5,17 +5,21 @@ libc_bionic_src_files_arm += \
     arch-arm/generic/bionic/memcmp.S \
     arch-arm/generic/bionic/memcpy.S \
     arch-arm/generic/bionic/memset.S \
+    arch-arm/generic/bionic/strchr.S \
     arch-arm/generic/bionic/strcmp.S \
     arch-arm/generic/bionic/strcpy.S \
     arch-arm/generic/bionic/strlen.c \
+    arch-arm/generic/bionic/strncmp.S \
 
 libc_bionic_src_files_exclude_arm += \
     bionic/__memcpy_chk.cpp \
     bionic/__memset_chk.cpp \
+    bionic/strchr.cpp \
 
 libc_openbsd_src_files_exclude_arm += \
     upstream-openbsd/lib/libc/string/memchr.c \
     upstream-openbsd/lib/libc/string/strcpy.c \
+    upstream-openbsd/lib/libc/string/strncmp.c \
 
 #
 # Inherently architecture-specific code.
