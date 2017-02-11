@@ -51,79 +51,82 @@ __FBSDID("$FreeBSD$");
 #include "math.h"
 #include "math_private.h"
 
+typedef union{ uint64_t u; double d; } du;
+
 double
 __ieee754_hypot(double x, double y)
 {
-	double a,b,t1,t2,y1,y2,w;
-	int32_t j,k,ha,hb;
+	static const double inf = __builtin_inf();
+	du u[3];
+	du *large = u;
+	du *small = &u[1];
 
-	GET_HIGH_WORD(ha,x);
-	ha &= 0x7fffffff;
-	GET_HIGH_WORD(hb,y);
-	hb &= 0x7fffffff;
-	if(hb > ha) {a=y;b=x;j=ha; ha=hb;hb=j;} else {a=x;b=y;}
-	a = fabs(a);
-	b = fabs(b);
-	if((ha-hb)>0x3c00000) {return a+b;} /* x/y > 2**60 */
-	k=0;
-	if(ha > 0x5f300000) {	/* a>2**500 */
-	   if(ha >= 0x7ff00000) {	/* Inf or NaN */
-	       u_int32_t low;
-	       /* Use original arg order iff result is NaN; quieten sNaNs. */
-	       w = fabs(x+0.0)-fabs(y+0.0);
-	       GET_LOW_WORD(low,a);
-	       if(((ha&0xfffff)|low)==0) w = a;
-	       GET_LOW_WORD(low,b);
-	       if(((hb^0x7ff00000)|low)==0) w = b;
-	       return w;
-	   }
-	   /* scale a and b by 2**-600 */
-	   ha -= 0x25800000; hb -= 0x25800000;	k += 600;
-	   SET_HIGH_WORD(a,ha);
-	   SET_HIGH_WORD(b,hb);
+	u[0].d = fabs(x);
+	u[1].d = fabs(y);
+
+	// handle inf / NaN
+	if( 0x7ff0000000000000ULL == ( u[0].u & 0x7ff0000000000000ULL)  ||
+		0x7ff0000000000000ULL == ( u[1].u & 0x7ff0000000000000ULL)	)
+	{
+		if( 0x7ff0000000000000ULL == u[0].u || 0x7ff0000000000000ULL == u[1].u )
+			return inf;
+
+		return x + y;		// NaN
 	}
-	if(hb < 0x20b00000) {	/* b < 2**-500 */
-	    if(hb <= 0x000fffff) {	/* subnormal b or 0 */
-	        u_int32_t low;
-		GET_LOW_WORD(low,b);
-		if((hb|low)==0) return a;
-		t1=0;
-		SET_HIGH_WORD(t1,0x7fd00000);	/* t1=2^1022 */
-		b *= t1;
-		a *= t1;
-		k -= 1022;
-	    } else {		/* scale a and b by 2^600 */
-	        ha += 0x25800000; 	/* a *= 2^600 */
-		hb += 0x25800000;	/* b *= 2^600 */
-		k -= 600;
-		SET_HIGH_WORD(a,ha);
-		SET_HIGH_WORD(b,hb);
-	    }
+
+	if( x == 0.0 || y == 0.0 )
+		return fabs( x + y );
+
+	//fix pointers to large and small if necessary
+	if( u[0].d < u[1].d )
+	{
+		large = &u[1];
+		small = &u[0];
 	}
-    /* medium size a and b */
-	w = a-b;
-	if (w>b) {
-	    t1 = 0;
-	    SET_HIGH_WORD(t1,ha);
-	    t2 = a-t1;
-	    w  = sqrt(t1*t1-(b*(-b)-t2*(a+t1)));
-	} else {
-	    a  = a+a;
-	    y1 = 0;
-	    SET_HIGH_WORD(y1,hb);
-	    y2 = b - y1;
-	    t1 = 0;
-	    SET_HIGH_WORD(t1,ha+0x00100000);
-	    t2 = a - t1;
-	    w  = sqrt(t1*y1-(w*(-w)-(t1*y2+t2*b)));
+
+	//break values up into exponent and mantissa
+	int64_t largeExp = large->u >> 52;
+	int64_t smallExp = small->u >> 52;
+	int64_t diff = largeExp - smallExp;
+	if( diff >= 55L )
+		return large->d + small->d;
+
+	large->u &= 0x000fffffffffffffULL;
+	small->u &= 0x000fffffffffffffULL;
+	large->u |= 0x3ff0000000000000ULL;
+	small->u |= 0x3ff0000000000000ULL;
+
+	//fix up denormals
+	if( 0 == smallExp )
+	{
+		if( 0 == largeExp )
+		{
+			large->d -= 1.0;
+			largeExp = (large->u >> 52) - (1022);
+			large->u &= 0x000fffffffffffffULL;
+			large->u |= 0x3ff0000000000000ULL;
+		}
+		small->d -= 1.0;
+		smallExp = (small->u >> 52) - (1022);
+		small->u &= 0x000fffffffffffffULL;
+		small->u |= 0x3ff0000000000000ULL;
 	}
-	if(k!=0) {
-	    u_int32_t high;
-	    t1 = 1.0;
-	    GET_HIGH_WORD(high,t1);
-	    SET_HIGH_WORD(t1,high+(k<<20));
-	    return t1*w;
-	} else return w;
+
+	u[2].u = (1023ULL - largeExp + smallExp) << 52;
+	small->d *= u[2].d;
+
+	double r = sqrt( large->d * large->d + small->d * small->d );
+
+	if( largeExp < 0 )
+	{
+		largeExp += 1022;
+		r *= 0x1.0p-1022;
+	}
+
+	u[2].u = largeExp << 52;
+	r *= u[2].d;
+
+	return r;
 }
 
 #if LDBL_MANT_DIG == 53
