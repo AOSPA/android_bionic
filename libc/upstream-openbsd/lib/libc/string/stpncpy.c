@@ -35,22 +35,25 @@
 #include <string.h>
 
 char *
-stpncpy(char *dst, const char *src, size_t n)
-{
-	if (n != 0) {
-		char *d = dst;
-		const char *s = src;
-
-		dst = &dst[n];
-		do {
-			if ((*d++ = *s++) == 0) {
-				dst = d - 1;
-				/* NUL pad the remaining n-1 bytes */
-				while (--n != 0)
-					*d++ = 0;
-				break;
-			}
-		} while (--n != 0);
-	}
-	return (dst);
+stpncpy(char * restrict dst, const char * restrict src, size_t maxlen) {
+    const size_t srclen = strnlen(src, maxlen);
+    if (srclen < maxlen) {
+        //  The stpncpy() and strncpy() functions copy at most maxlen
+        //  characters from src into dst.
+        memcpy(dst, src, srclen);
+        //  If src is less than maxlen characters long, the remainder
+        //  of dst is filled with '\0' characters.
+        memset(dst+srclen, 0, maxlen-srclen);
+        //  The stpcpy() and stpncpy() functions return a pointer to the
+        //  terminating '\0' character of dst.
+        return dst+srclen;
+    } else {
+        //  The stpncpy() and strncpy() functions copy at most maxlen
+        //  characters from src into dst.
+        memcpy(dst, src, maxlen);
+        //  If stpncpy() does not terminate dst with a NUL character, it
+        //  instead returns a pointer to src[maxlen] (which does not
+        //  necessarily refer to a valid memory location.)
+        return dst+maxlen;
+    }
 }

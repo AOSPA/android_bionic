@@ -33,25 +33,20 @@
 
 #include <string.h>
 
-/*
- * Concatenate src on the end of dst.  At most strlen(dst)+n+1 bytes
- * are written at dst (at most n+1 bytes being appended).  Return dst.
- */
 char *
-strncat(char *dst, const char *src, size_t n)
-{
-	if (n != 0) {
-		char *d = dst;
-		const char *s = src;
-
-		while (*d != 0)
-			d++;
-		do {
-			if ((*d = *s++) == 0)
-				break;
-			d++;
-		} while (--n != 0);
-		*d = 0;
-	}
-	return (dst);
+strncat(char *restrict dst, const char *restrict src, size_t maxlen) {
+	const size_t dstlen = strlen(dst);
+	const size_t srclen = strnlen(src, maxlen);
+    //  The strcat() and strncat() functions append a copy of the null-
+    //  terminated string src to the end of the null-terminated string dst,
+    //  then add a terminating '\0'.  The string dst must have sufficient
+    //  space to hold the result.
+    //
+    //  The strncat() function appends not more than maxlen characters
+    //  from src, and then adds a terminating '\0'.
+    const size_t cpylen = srclen < maxlen ? srclen : maxlen;
+    memcpy(dst+dstlen, src, cpylen);
+    dst[dstlen+cpylen] = '\0';
+    //  The strcat() and strncat() functions return dst.
+    return dst;
 }
