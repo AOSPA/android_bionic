@@ -52,8 +52,10 @@ static BacktraceData* g_backtrace_data = nullptr;
 static void EnableToggle(int, siginfo_t*, void*) {
   if (g_backtrace_data->enabled()) {
     g_backtrace_data->set_enabled(false);
+    info_log("%s:%d backtrace disabled.", getprogname(), getpid());
   } else {
     g_backtrace_data->set_enabled(true);
+    info_log("%s:%d backtrace enabled.", getprogname(), getpid());
   }
 }
 
