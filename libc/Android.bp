@@ -1108,6 +1108,7 @@ cc_library_static {
                 "arch-arm64/generic/bionic/strlen.S",
                 "arch-arm64/generic/bionic/strncmp.S",
                 "arch-arm64/generic/bionic/strnlen.S",
+                "arch-arm64/generic/bionic/strrchr.S",
                 "arch-arm64/generic/bionic/wmemmove.S",
 
                 "arch-arm64/bionic/__bionic_clone.S",
@@ -1120,6 +1121,7 @@ cc_library_static {
                 "bionic/__memcpy_chk.cpp",
                 "bionic/strchr.cpp",
                 "bionic/strnlen.c",
+                "bionic/strrchr.cpp",
             ],
             denver64: {
                 srcs: [
