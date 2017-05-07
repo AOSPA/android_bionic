@@ -934,14 +934,10 @@ cc_library_static {
                 srcs: [
                     "arch-arm/krait/bionic/memcpy.S",
                     "arch-arm/krait/bionic/memset.S",
-
-                    "arch-arm/krait/bionic/strcmp.S",
                 ],
                 exclude_srcs: [
                     "arch-arm/cortex-a15/bionic/memset.S",
                     "arch-arm/cortex-a15/bionic/memcpy.S",
-
-                    "arch-arm/cortex-a15/bionic/strcmp.S",
                 ],
             },
             cortex_a53: {
@@ -958,39 +954,30 @@ cc_library_static {
                 srcs: [
                     "arch-arm/cortex-a7/bionic/memset.S",
                     "arch-arm/denver/bionic/memcpy.S",
-
-                    "arch-arm/krait/bionic/strcmp.S",
                 ],
                 exclude_srcs: [
                     "arch-arm/cortex-a15/bionic/memset.S",
                     "arch-arm/cortex-a15/bionic/memcpy.S",
-                    "arch-arm/cortex-a15/bionic/strcmp.S",
                 ],
             },
             cortex_a73: {
                 srcs: [
                     "arch-arm/cortex-a7/bionic/memset.S",
                     "arch-arm/denver/bionic/memcpy.S",
-
-                    "arch-arm/krait/bionic/strcmp.S",
                 ],
                 exclude_srcs: [
                     "arch-arm/cortex-a15/bionic/memset.S",
                     "arch-arm/cortex-a15/bionic/memcpy.S",
-                    "arch-arm/cortex-a15/bionic/strcmp.S",
                 ],
             },
             cortex_a75: {
                 srcs: [
                     "arch-arm/cortex-a7/bionic/memset.S",
                     "arch-arm/denver/bionic/memcpy.S",
-
-                    "arch-arm/krait/bionic/strcmp.S",
                 ],
                 exclude_srcs: [
                     "arch-arm/cortex-a15/bionic/memset.S",
                     "arch-arm/cortex-a15/bionic/memcpy.S",
-                    "arch-arm/cortex-a15/bionic/strcmp.S",
                 ],
             },
             denver: {
@@ -1007,13 +994,10 @@ cc_library_static {
                 srcs: [
                     "arch-arm/kryo/bionic/memcpy.S",
                     "arch-arm/cortex-a7/bionic/memset.S",
-
-                    "arch-arm/krait/bionic/strcmp.S",
                 ],
                 exclude_srcs: [
                     "arch-arm/cortex-a15/bionic/memset.S",
                     "arch-arm/cortex-a15/bionic/memcpy.S",
-                    "arch-arm/cortex-a15/bionic/strcmp.S",
                 ],
             },
             // Cores not listed above (like cortex-a8, cortex-a15) or
