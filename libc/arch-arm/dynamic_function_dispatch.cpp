@@ -293,12 +293,7 @@ DEFINE_IFUNC(strcmp) {
 
 typedef size_t strlen_func(const char* __s);
 DEFINE_IFUNC(strlen) {
-    switch(get_cpu_variant()) {
-        case kCortexA9:
-            RETURN_FUNC(strlen_func, strlen_a9);
-        default:
-            RETURN_FUNC(strlen_func, strlen_a15);
-    }
+    RETURN_FUNC(strlen_func, strlen_a15);
 }
 
 }  // extern "C"
