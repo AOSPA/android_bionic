@@ -9,6 +9,8 @@ cc_library_static {
 
     // We need to access Bionic private headers in the linker.
     include_dirs: ["bionic/libc"],
+
+    static_libs: ["libasync_safe"],
 }
 
 cc_binary {
@@ -119,13 +121,7 @@ cc_binary {
         "libbase",
         "libz",
 
-        "libdebuggerd_handler_core",
         "libdebuggerd_handler_fallback",
-        "libdebuggerd",
-        "libbacktrace",
-        "libunwind",
-        "liblzma",
-        "libcutils",
 
         "liblog",
         "libc++_static",

@@ -33,9 +33,10 @@
 #include "linker_utils.h"
 
 #include <android-base/file.h>
+#include <android-base/scopeguard.h>
 #include <android-base/strings.h>
 
-#include <private/ScopeGuard.h>
+#include <async_safe/log.h>
 
 #include <stdlib.h>
 
@@ -150,7 +151,7 @@ static std::string create_error_msg(const char* file,
                                     size_t lineno,
                                     const std::string& msg) {
   char buf[1024];
-  __libc_format_buffer(buf, sizeof(buf), "%s:%zu: error: %s", file, lineno, msg.c_str());
+  async_safe_format_buffer(buf, sizeof(buf), "%s:%zu: error: %s", file, lineno, msg.c_str());
 
   return std::string(buf);
 }
@@ -329,7 +330,7 @@ class Properties {
     params.push_back({ "LIB", kLibParamValue });
     if (target_sdk_version_ != 0) {
       char buf[16];
-      __libc_format_buffer(buf, sizeof(buf), "%d", target_sdk_version_);
+      async_safe_format_buffer(buf, sizeof(buf), "%d", target_sdk_version_);
       params.push_back({ "SDK_VER", buf });
     }
 
@@ -388,9 +389,7 @@ bool Config::read_binary_config(const char* ld_config_file_path,
 
   Properties properties(std::move(property_map));
 
-  auto failure_guard = make_scope_guard([] {
-    g_config.clear();
-  });
+  auto failure_guard = android::base::make_scope_guard([] { g_config.clear(); });
 
   std::unordered_map<std::string, NamespaceConfig*> namespace_configs;
 
@@ -479,7 +478,7 @@ bool Config::read_binary_config(const char* ld_config_file_path,
     ns_config->set_permitted_paths(properties.get_paths(property_name_prefix + ".permitted.paths"));
   }
 
-  failure_guard.disable();
+  failure_guard.Disable();
   *config = &g_config;
   return true;
 }

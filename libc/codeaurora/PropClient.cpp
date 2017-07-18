@@ -34,7 +34,7 @@
 #error PropClient.cpp should NOT be included in static libc builds.
 #endif
 
-#include "private/libc_logging.h"
+#include <async_safe/log.h>
 #include <dlfcn.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -74,7 +74,7 @@ static void propClientInitImpl() {
         // If the library is not available, it's not an error. We'll just use
         // default implementations of functions that it would've overridden.
 
-        __libc_format_log(ANDROID_LOG_ERROR, "propClient", "PropClient failed to load");
+        async_safe_format_log(ANDROID_LOG_ERROR, "propClient", "PropClient failed to load");
         return;
     }
 
@@ -103,7 +103,7 @@ static void propClientInitImpl() {
 
 extern "C" __LIBC_HIDDEN__ void propClientInit() {
     if (pthread_once(&propClientInitOnce, propClientInitImpl)) {
-        __libc_format_log(ANDROID_LOG_ERROR, "propClient", "Failed to initialize prop_client");
+        async_safe_format_log(ANDROID_LOG_ERROR, "propClient", "Failed to initialize prop_client");
     }
 }
 

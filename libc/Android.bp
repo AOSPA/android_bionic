@@ -1,6 +1,7 @@
 // Define the common source files for all the libc instances
 // =========================================================
 libc_common_src_files = [
+    "async_safe/async_safe_log.cpp",
     "bionic/ether_aton.c",
     "bionic/ether_ntoa.c",
     "bionic/fts.c",
@@ -58,7 +59,10 @@ cc_defaults {
     asflags: libc_common_flags,
     conlyflags: ["-std=gnu99"],
     cppflags: [],
-    include_dirs: ["external/jemalloc/include"],
+    include_dirs: [
+        "bionic/libc/async_safe/include",
+        "external/jemalloc/include",
+    ],
 
     stl: "none",
     system_shared_libs: [],
@@ -119,6 +123,12 @@ cc_library_static {
     cflags: ["-fno-stack-protector"],
 }
 
+cc_library_static {
+    name: "libc_init_dynamic",
+    defaults: ["libc_defaults"],
+    srcs: ["bionic/libc_init_dynamic.cpp"],
+    cflags: ["-fno-stack-protector"],
+}
 
 // ========================================================
 // libc_tzcode.a - upstream 'tzcode' code
@@ -129,6 +139,7 @@ cc_library_static {
     defaults: ["libc_defaults"],
     srcs: [
         "tzcode/**/*.c",
+        "tzcode/bionic.cpp",
         "upstream-openbsd/lib/libc/time/wcsftime.c", // tzcode doesn't include wcsftime, so we use the OpenBSD one.
     ],
 
@@ -609,6 +620,13 @@ cc_library_static {
                     "upstream-openbsd/lib/libc/string/strcat.c",
                 ],
             },
+            cortex_a73: {
+                exclude_srcs: [
+                    "upstream-openbsd/lib/libc/string/memmove.c",
+                    "upstream-openbsd/lib/libc/string/stpcpy.c",
+                    "upstream-openbsd/lib/libc/string/strcat.c",
+                ],
+            },
             denver: {
                 exclude_srcs: [
                     "upstream-openbsd/lib/libc/string/memmove.c",
@@ -617,6 +635,13 @@ cc_library_static {
                 ],
             },
             krait: {
+                exclude_srcs: [
+                    "upstream-openbsd/lib/libc/string/memmove.c",
+                    "upstream-openbsd/lib/libc/string/stpcpy.c",
+                    "upstream-openbsd/lib/libc/string/strcat.c",
+                ],
+            },
+            kryo: {
                 exclude_srcs: [
                     "upstream-openbsd/lib/libc/string/memmove.c",
                     "upstream-openbsd/lib/libc/string/stpcpy.c",
@@ -958,6 +983,32 @@ cc_library_static {
                     "bionic/__strcpy_chk.cpp",
                 ],
             },
+            cortex_a73: {
+                srcs: [
+                    "arch-arm/cortex-a7/bionic/memset.S",
+
+                    "arch-arm/denver/bionic/memcpy.S",
+                    "arch-arm/denver/bionic/memmove.S",
+                    "arch-arm/denver/bionic/__strcat_chk.S",
+                    "arch-arm/denver/bionic/__strcpy_chk.S",
+
+                    "arch-arm/krait/bionic/strcmp.S",
+
+                    "arch-arm/cortex-a15/bionic/stpcpy.S",
+                    "arch-arm/cortex-a15/bionic/strcat.S",
+                    "arch-arm/cortex-a15/bionic/strcpy.S",
+                    "arch-arm/cortex-a15/bionic/strlen.S",
+                ],
+                exclude_srcs: [
+                    "arch-arm/generic/bionic/memcpy.S",
+                    "arch-arm/generic/bionic/memset.S",
+                    "arch-arm/generic/bionic/strcmp.S",
+                    "arch-arm/generic/bionic/strcpy.S",
+                    "arch-arm/generic/bionic/strlen.c",
+                    "bionic/__strcat_chk.cpp",
+                    "bionic/__strcpy_chk.cpp",
+                ],
+            },
             denver: {
                 srcs: [
                     "arch-arm/denver/bionic/memcpy.S",
@@ -1009,7 +1060,32 @@ cc_library_static {
                     "bionic/__strcpy_chk.cpp",
                 ],
             },
+            kryo: {
+                srcs: [
+                    "arch-arm/kryo/bionic/memcpy.S",
+                    "arch-arm/cortex-a7/bionic/memset.S",
+                    "arch-arm/krait/bionic/strcmp.S",
+                    "arch-arm/krait/bionic/__strcat_chk.S",
+                    "arch-arm/krait/bionic/__strcpy_chk.S",
 
+                    // Use cortex-a15 versions of strcat/strcpy/strlen.
+                    "arch-arm/cortex-a15/bionic/stpcpy.S",
+                    "arch-arm/cortex-a15/bionic/strcat.S",
+                    "arch-arm/cortex-a15/bionic/strcpy.S",
+                    "arch-arm/cortex-a15/bionic/strlen.S",
+
+                    "arch-arm/denver/bionic/memmove.S",
+                ],
+                exclude_srcs: [
+                    "arch-arm/generic/bionic/memcpy.S",
+                    "arch-arm/generic/bionic/memset.S",
+                    "arch-arm/generic/bionic/strcmp.S",
+                    "arch-arm/generic/bionic/strcpy.S",
+                    "arch-arm/generic/bionic/strlen.c",
+                    "bionic/__strcat_chk.cpp",
+                    "bionic/__strcpy_chk.cpp",
+                ],
+            },
         },
         arm64: {
             srcs: [
@@ -1049,6 +1125,14 @@ cc_library_static {
                 ],
             },
             cortex_a53: {
+                srcs: [
+                    "arch-arm64/cortex-a53/bionic/memmove.S",
+                ],
+                exclude_srcs: [
+                    "arch-arm64/generic/bionic/memmove.S",
+                ],
+            },
+            cortex_a73: {
                 srcs: [
                     "arch-arm64/cortex-a53/bionic/memmove.S",
                 ],
@@ -1276,6 +1360,7 @@ cc_library_static {
         "bionic/ctype.cpp",
         "bionic/dirent.cpp",
         "bionic/dup2.cpp",
+        "bionic/environ.cpp",
         "bionic/epoll_create.cpp",
         "bionic/epoll_pwait.cpp",
         "bionic/epoll_wait.cpp",
@@ -1316,7 +1401,6 @@ cc_library_static {
         "bionic/__libc_current_sigrtmax.cpp",
         "bionic/__libc_current_sigrtmin.cpp",
         "bionic/libc_init_common.cpp",
-        "bionic/libc_logging.cpp",
         "bionic/libgen.cpp",
         "bionic/link.cpp",
         "bionic/locale.cpp",
@@ -1694,12 +1778,11 @@ cc_library {
             "arch-common/bionic/crtbrand.S",
             "bionic/icu.cpp",
             "bionic/malloc_common.cpp",
-            "bionic/libc_init_dynamic.cpp",
             "bionic/NetdClient.cpp",
             "arch-common/bionic/crtend_so.S",
             "codeaurora/PropClient.cpp",
         ],
-        whole_static_libs: ["libjemalloc"],
+        whole_static_libs: ["libc_init_dynamic"],
     },
 
     required: ["tzdata"],
@@ -1722,8 +1805,9 @@ cc_library {
     // you wanted!
 
     shared_libs: ["libdl"],
-    whole_static_libs: ["libc_common"],
+    whole_static_libs: ["libc_common", "libjemalloc"],
     cppflags: ["-DUSE_WRAPPER"],
+
     nocrt: true,
 
     arch: {
@@ -1775,19 +1859,6 @@ cc_library {
 }
 
 // ========================================================
-// libc_logging.a
-// ========================================================
-cc_library_static {
-    defaults: ["libc_defaults"],
-
-    srcs: [
-        "bionic/libc_logging.cpp",
-    ],
-
-    name: "libc_logging",
-}
-
-// ========================================================
 // libstdc++.so + libstdc++.a
 // ========================================================
 cc_library {
@@ -1800,9 +1871,7 @@ cc_library {
     ],
     name: "libstdc++",
     system_shared_libs: ["libc"],
-    shared: {
-        static_libs: ["libc_logging"],
-    },
+		static_libs: ["libasync_safe"],
 
     //TODO (dimitry): This is to work around b/24465209. Remove after root cause is fixed
     arch: {
@@ -1879,28 +1948,10 @@ cc_defaults {
     },
 }
 
-// Android.mk:start
-// # crt obj files
-// # ========================================================
-// # crtbrand.c needs <stdint.h> and a #define for the platform SDK version.
-// libc_crt_target_cflags := \
-//    -I$(LOCAL_PATH)/include \
-//    -DPLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION) \
-//
-// my_2nd_arch_prefix :=
-// include $(LOCAL_PATH)/arch-$(TARGET_ARCH)/$(TARGET_ARCH).mk
-// include $(LOCAL_PATH)/crt.mk
-// ifdef TARGET_2ND_ARCH
-// my_2nd_arch_prefix := $(TARGET_2ND_ARCH_VAR_PREFIX)
-// include $(LOCAL_PATH)/arch-$(TARGET_2ND_ARCH)/$(TARGET_2ND_ARCH).mk
-// include $(LOCAL_PATH)/crt.mk
-// my_2nd_arch_prefix :=
-// endif
-//
-// include $(call all-makefiles-under,$(LOCAL_PATH))
-// Android.mk:end
+// crt obj files
 cc_object {
     name: "crtbrand",
+    // crtbrand.c needs <stdint.h> and a #define for the platform SDK version.
     local_include_dirs: ["include"],
     product_variables: {
         platform_sdk_version: {
@@ -1915,7 +1966,6 @@ cc_object {
     ],
 }
 
-// Android.mk:ignore
 cc_object {
     name: "crtbegin_so1",
     local_include_dirs: ["include"],
@@ -1927,7 +1977,6 @@ cc_object {
     ],
 }
 
-// Android.mk:ignore
 cc_object {
     name: "crtbegin_so",
 
@@ -1941,7 +1990,6 @@ cc_object {
     ],
 }
 
-// Android.mk:ignore
 cc_object {
     name: "crtend_so",
     local_include_dirs: ["include"],
@@ -1953,21 +2001,12 @@ cc_object {
     ],
 }
 
-// Android.mk:ignore
 cc_object {
     name: "crtbegin_static1",
     local_include_dirs: ["include"],
     srcs: ["arch-common/bionic/crtbegin.c"],
 
     arch: {
-        arm64: {
-            srcs: [
-                "arch-arm64/bionic/crtbegin.c",
-            ],
-            exclude_srcs: [
-                "arch-common/bionic/crtbegin.c",
-            ],
-        },
         mips: {
             srcs: [
                 "arch-mips/bionic/crtbegin.c",
@@ -1989,7 +2028,6 @@ cc_object {
     defaults: ["crt_defaults"],
 }
 
-// Android.mk:ignore
 cc_object {
     name: "crtbegin_static",
 
@@ -2000,21 +2038,12 @@ cc_object {
     defaults: ["crt_defaults"],
 }
 
-// Android.mk:ignore
 cc_object {
     name: "crtbegin_dynamic1",
     local_include_dirs: ["include"],
     srcs: ["arch-common/bionic/crtbegin.c"],
 
     arch: {
-        arm64: {
-            srcs: [
-                "arch-arm64/bionic/crtbegin.c",
-            ],
-            exclude_srcs: [
-                "arch-common/bionic/crtbegin.c",
-            ],
-        },
         mips: {
             srcs: [
                 "arch-mips/bionic/crtbegin.c",
@@ -2035,7 +2064,6 @@ cc_object {
     defaults: ["crt_defaults"],
 }
 
-// Android.mk:ignore
 cc_object {
     name: "crtbegin_dynamic",
 
@@ -2046,7 +2074,6 @@ cc_object {
     defaults: ["crt_defaults"],
 }
 
-// Android.mk:ignore
 cc_object {
     // We rename crtend.o to crtend_android.o to avoid a
     // name clash between gcc and bionic.
@@ -2084,10 +2111,18 @@ ndk_headers {
 }
 
 ndk_headers {
-    name: "libc_android",
+    name: "libc_kernel_android_uapi_linux",
     from: "kernel/android/uapi/linux",
     to: "linux",
     srcs: ["kernel/android/uapi/linux/**/*.h"],
+    license: "NOTICE",
+}
+
+ndk_headers {
+    name: "libc_kernel_android_scsi",
+    from: "kernel/android/scsi/scsi",
+    to: "scsi",
+    srcs: ["kernel/android/scsi/**/*.h"],
     license: "NOTICE",
 }
 
