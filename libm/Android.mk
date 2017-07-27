@@ -289,7 +289,7 @@ LOCAL_SRC_FILES_EXCLUDE_arm += \
     upstream-freebsd/lib/msun/src/e_sqrtf.c \
     upstream-freebsd/lib/msun/src/s_floor.c \
 
-ifneq (,$(filter cortex-a53 cortex-a53.a57 kryo denver,$(TARGET_$(combo_2nd_arch_prefix)CPU_VARIANT)))
+ifneq (,$(filter cortex-a53 cortex-a53.a57 cortex-a73 kryo denver,$(TARGET_$(combo_2nd_arch_prefix)CPU_VARIANT)))
 LOCAL_SRC_FILES_arm += \
     arm/ceil.S \
     arm/floor_aarch32.S \
