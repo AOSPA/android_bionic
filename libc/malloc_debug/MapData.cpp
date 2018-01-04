@@ -58,7 +58,8 @@ static MapEntry* parse_line(char* line) {
   }
 
   MapEntry* entry = new MapEntry(start, end, offset, name, name_len);
-  if (permissions[0] != 'r') {
+  // Only read it if included 'r' and 'x' permission.
+  if (permissions[0] != 'r' || permissions[2] != 'x') {
     // Any unreadable map will just get a zero load base.
     entry->load_base = 0;
     entry->load_base_read = true;
@@ -126,6 +127,10 @@ bool MapData::ReadMaps() {
 
     auto it = entries_.find(entry);
     if (it == entries_.end()) {
+      // Let's read the 'loadbase', perhaps we'll get crash if the *.so has been unloaded.
+      if (!entry->load_base_read) {
+        read_loadbase(entry);
+      }
       entries_.insert(entry);
     } else {
       delete entry;
@@ -146,7 +151,9 @@ MapData::~MapData() {
 const MapEntry* MapData::find(uintptr_t pc, uintptr_t* rel_pc) {
   MapEntry pc_entry(pc);
 
-  std::lock_guard<std::mutex> lock(m_);
+  //std::lock_guard<std::mutex> lock(m_);
+  // With the 'lock_guard', it will stuck there sometime.
+  pthread_mutex_lock(&mutex_);
 
   auto it = entries_.find(&pc_entry);
   if (it == entries_.end()) {
@@ -154,6 +161,7 @@ const MapEntry* MapData::find(uintptr_t pc, uintptr_t* rel_pc) {
   }
   it = entries_.find(&pc_entry);
   if (it == entries_.end()) {
+    pthread_mutex_unlock(&mutex_);
     return nullptr;
   }
 
@@ -164,5 +172,7 @@ const MapEntry* MapData::find(uintptr_t pc, uintptr_t* rel_pc) {
   if (rel_pc) {
     *rel_pc = pc - entry->start + entry->load_base;
   }
+
+  pthread_mutex_unlock(&mutex_);
   return entry;
 }

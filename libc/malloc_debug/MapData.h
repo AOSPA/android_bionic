@@ -68,8 +68,8 @@ class MapData {
 
  private:
   bool ReadMaps();
-
-  std::mutex m_;
+  //std::mutex m_;
+  pthread_mutex_t mutex_ = PTHREAD_MUTEX_INITIALIZER;
   std::set<MapEntry*, compare_entries> entries_;
 
   DISALLOW_COPY_AND_ASSIGN(MapData);
