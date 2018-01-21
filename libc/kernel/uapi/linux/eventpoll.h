@@ -33,7 +33,7 @@
 #else
 #define EPOLL_PACKED
 #endif
-struct __kernel_uapi_epoll_event {
+struct epoll_event {
   __u32 events;
   __u64 data;
 } EPOLL_PACKED;
