@@ -38,6 +38,7 @@
 #include "private/bionic_globals.h"
 #include "private/bionic_tls.h"
 #include "private/KernelArgumentBlock.h"
+#include <sys/system_properties.h>
 
 #include "android-base/strings.h"
 #include "android-base/stringprintf.h"
@@ -203,6 +204,24 @@ static char kLinkerPath[] = "/system/bin/linker64";
 static char kLinkerPath[] = "/system/bin/linker";
 #endif
 
+#define BUFF_SIZE 4096
+
+char *strnstr(const char *src, const char *find, size_t len) {
+  size_t find_l;
+
+  find_l = strnlen(find, BUFF_SIZE);
+  if (!find_l)
+    return const_cast<char *>(src);
+  while (len >= find_l) {
+    len--;
+    if (!memcmp(src, find, find_l))
+      return const_cast<char *>(src);
+    src++;
+  }
+
+  return NULL;
+}
+
 /*
  * This code is called after the linker has linked itself and
  * fixed it's own GOT. It is safe to make references to externs
@@ -356,6 +375,16 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args) {
   // Load ld_preloads and dependencies.
   std::vector<const char*> needed_library_name_list;
   size_t ld_preloads_count = 0;
+
+  // Enable fd/socket/mmap leak detector feature.
+  char value[PROP_VALUE_MAX];
+  if (__system_property_get("libc.debug.leakdetect", value) && atoi(value) >= 0) {
+    if (__system_property_get("libc.debug.leakdetect.program", value) == 0 ||
+                              strnstr(executable_path, value, strlen(executable_path)) != NULL) {
+      needed_library_name_list.push_back("libc_leak_detector.so");
+      ++ld_preloads_count;
+    }
+  }
 
   for (const auto& ld_preload_name : g_ld_preload_names) {
     needed_library_name_list.push_back(ld_preload_name.c_str());
