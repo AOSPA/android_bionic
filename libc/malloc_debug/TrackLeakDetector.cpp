@@ -169,6 +169,7 @@ void TrackLeakDetector::LoadMap() {
 
 void TrackLeakDetector::Add(unsigned long key, leak_type type) {
   BacktraceHeader header;
+  memset(&header, 0, sizeof(header));
   header.num_frames = backtrace_get2(header.frames, DEFAULT_BACKTRACE_FRAMES);
   char* callstack = NULL;
 
@@ -187,6 +188,7 @@ void TrackLeakDetector::Add(unsigned long key, leak_type type) {
       header.key = key;
       header.num_same = 1;
       header.type = type;
+      header.java_stack = NULL;
       memcpy(&headersLock[index], &header, sizeof(BacktraceHeader));
       headersLock[index].java_stack = callstack;
       callstack = NULL;

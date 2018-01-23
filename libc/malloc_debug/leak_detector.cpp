@@ -155,8 +155,11 @@ libldor_init( void )
 
 // Opens a file.
 int open(const char* pathname, int flags, ...) {
-  if (lib_open == NULL)
+  if (lib_open == NULL) {
     lib_open = (int (*) (const char *, int, ...))dlsym(RTLD_NEXT, "open");
+    if (lib_open == NULL)
+      return EINVAL;
+  }
 
   mode_t mode = 0;
 
@@ -176,8 +179,11 @@ int open(const char* pathname, int flags, ...) {
 
 // Dup a file.
 int dup(int oldfd) {
-  if (lib_dup == NULL)
+  if (lib_dup == NULL) {
     lib_dup = (int (*) (int))dlsym(RTLD_NEXT, "dup");
+    if (lib_dup == NULL)
+      return EINVAL;
+  }
 
   int fd = (lib_dup(oldfd));
   if (g_init && fd != -1 && (g_type == 0 || g_type == LEAK_TYPE_FILE))
@@ -188,8 +194,11 @@ int dup(int oldfd) {
 
 // Dup2 a file.
 int dup2(int oldfd, int newfd) {
-  if (lib_dup2 == NULL)
+  if (lib_dup2 == NULL) {
     lib_dup2 = (int (*) (int, int))dlsym(RTLD_NEXT, "dup2");
+    if (lib_dup2 == NULL)
+      return EINVAL;
+  }
 
   int fd = (lib_dup2(oldfd, newfd));
   if (g_init && fd != -1 && (g_type == 0 || g_type == LEAK_TYPE_FILE))
@@ -200,8 +209,11 @@ int dup2(int oldfd, int newfd) {
 
 // Closes a file or socket.
 int close(int fd) {
-  if (lib_close == NULL)
+  if (lib_close == NULL) {
     lib_close = (int (*) (int))dlsym(RTLD_NEXT, "close");
+    if (lib_close == NULL)
+      return EINVAL;
+  }
 
   if (g_init)
     g_leakDetector->Remove((unsigned long)fd);
@@ -211,8 +223,11 @@ int close(int fd) {
 
 // Creates a new socket.
 int socket(int domain, int type, int protocol) {
-  if (lib_socket == NULL)
+  if (lib_socket == NULL) {
     lib_socket = (int (*) (int, int, int))dlsym(RTLD_NEXT, "socket");
+    if (lib_socket == NULL)
+      return EINVAL;
+  }
 
   int fd = (lib_socket(domain, type, protocol));
   if (g_init && fd != -1 && (g_type == 0 || g_type == LEAK_TYPE_SOCKET))
@@ -223,8 +238,11 @@ int socket(int domain, int type, int protocol) {
 
 // Accept a connection on a socket.
 int __accept4(int sockfd, sockaddr* addr, socklen_t* addrlen, int flags) {
-  if (lib_accept4 == NULL)
+  if (lib_accept4 == NULL) {
     lib_accept4 = (int (*) (int, sockaddr*, socklen_t*, int))dlsym(RTLD_NEXT, "__accept4");
+    if (lib_accept4 == NULL)
+      return EINVAL;
+  }
 
   int fd = (lib_accept4(sockfd, addr, addrlen, flags));
   if (g_init && fd != -1 && (g_type == 0 || g_type == LEAK_TYPE_SOCKET))
@@ -235,8 +253,11 @@ int __accept4(int sockfd, sockaddr* addr, socklen_t* addrlen, int flags) {
 
 // Creates an unnamed pair of connected sockets in the specified domain.
 int socketpair(int domain, int type, int protocol, int sv[2]) {
-  if (lib_socketpair == NULL)
+  if (lib_socketpair == NULL) {
     lib_socketpair = (int (*) (int, int, int, int[2]))dlsym(RTLD_NEXT, "socketpair");
+    if (lib_socketpair == NULL)
+      return EINVAL;
+  }
 
   int ret = (lib_socketpair(domain, type, protocol, sv));
   if (g_init && ret != -1 && (g_type == 0 || g_type == LEAK_TYPE_SOCKET)) {
@@ -249,8 +270,11 @@ int socketpair(int domain, int type, int protocol, int sv[2]) {
 
 // Creates a new mapping in the virtual address space of the calling process.
 void* mmap(void* addr, size_t size, int prot, int flags, int fd, off_t offset) {
-  if (lib_mmap == NULL)
+  if (lib_mmap == NULL) {
     lib_mmap = (void* (*) (void*, size_t, int, int, int, off_t))dlsym(RTLD_NEXT, "mmap");
+    if (lib_mmap == NULL)
+      return NULL;
+  }
 
   void* address = (lib_mmap(addr, size, prot, flags, fd, offset));
   if (g_init && address != MAP_FAILED && (g_type == 0 || g_type == LEAK_TYPE_MMAP))
@@ -261,8 +285,11 @@ void* mmap(void* addr, size_t size, int prot, int flags, int fd, off_t offset) {
 
 // Deletes the mappings for the specified address range.
 int munmap(void* addr, size_t size) {
-  if (lib_munmap == NULL)
+  if (lib_munmap == NULL) {
     lib_munmap = (int (*) (void*, size_t))dlsym(RTLD_NEXT, "munmap");
+    if (lib_munmap == NULL)
+      return EINVAL;
+  }
 
   int ret = (lib_munmap(addr, size));
   if (g_init && ret != -1)
