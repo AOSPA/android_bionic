@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2008 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,53 +26,23 @@
  * SUCH DAMAGE.
  */
 
-#ifndef DEBUG_MALLOC_MAPDATA_H
-#define DEBUG_MALLOC_MAPDATA_H
+// Prototype: void *memcpy (void *dst, const void *src, size_t count).
 
-#include <sys/cdefs.h>
+#include <private/bionic_asm.h>
 
-#include <mutex>
-#include <string>
-#include <set>
+ENTRY(__memcpy_chk)
+  cmp x2, x3
+  bls memcpy
 
-#include <private/bionic_macros.h>
+  // Preserve for accurate backtrace.
+  stp x29, x30, [sp, -16]!
+  .cfi_def_cfa_offset 16
+  .cfi_rel_offset x29, 0
+  .cfi_rel_offset x30, 8
 
-struct MapEntry {
-  MapEntry(uintptr_t start, uintptr_t end, uintptr_t offset, const char* name, size_t name_len)
-      : start(start), end(end), offset(offset), name(name, name_len) {}
+  bl __memcpy_chk_fail
+END(__memcpy_chk)
 
-  MapEntry(uintptr_t pc) : start(pc), end(pc) {}
-
-  uintptr_t start;
-  uintptr_t end;
-  uintptr_t offset;
-  uintptr_t load_base;
-  bool load_base_read = false;
-  std::string name;
-};
-
-
-// Ordering comparator that returns equivalence for overlapping entries
-struct compare_entries {
-  bool operator()(const MapEntry* a, const MapEntry* b) const {
-    return a->end <= b->start;
-  }
-};
-
-class MapData {
- public:
-  MapData() = default;
-  ~MapData();
-
-  const MapEntry* find(uintptr_t pc, uintptr_t* rel_pc = nullptr);
-
- private:
-  bool ReadMaps();
-  //std::mutex m_;
-  pthread_mutex_t mutex_ = PTHREAD_MUTEX_INITIALIZER;
-  std::set<MapEntry*, compare_entries> entries_;
-
-  DISALLOW_COPY_AND_ASSIGN(MapData);
-};
-
-#endif  // DEBUG_MALLOC_MAPDATA_H
+ENTRY(memcpy)
+  #include "memcpy_base.S"
+END(memcpy)
