@@ -29,14 +29,6 @@
 #include <stdlib.h>
 #include <sys/cdefs.h>
 
-extern "C" void __somehow_you_managed_to_not_get_the_actual_symbols_from_the_linker();
-
-extern "C" void __ld_android_init() __attribute__((constructor));
-
-void __ld_android_init() {
-  __somehow_you_managed_to_not_get_the_actual_symbols_from_the_linker();
-}
-
 extern "C" void __internal_linker_error() {
   abort();
 }
@@ -49,6 +41,7 @@ __strong_alias(__loader_android_get_LD_LIBRARY_PATH, __internal_linker_error);
 __strong_alias(__loader_android_get_exported_namespace, __internal_linker_error);
 __strong_alias(__loader_android_init_anonymous_namespace, __internal_linker_error);
 __strong_alias(__loader_android_link_namespaces, __internal_linker_error);
+__strong_alias(__loader_android_link_namespaces_all_libs, __internal_linker_error);
 __strong_alias(__loader_android_set_application_target_sdk_version, __internal_linker_error);
 __strong_alias(__loader_android_update_LD_LIBRARY_PATH, __internal_linker_error);
 __strong_alias(__loader_cfi_fail, __internal_linker_error);

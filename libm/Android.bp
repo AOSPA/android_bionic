@@ -6,6 +6,7 @@ bionic_coverage = false
 cc_library {
     name: "libm",
     defaults: ["linux_bionic_supported"],
+    static_ndk_lib: true,
 
     srcs: [
         "upstream-freebsd/lib/msun/bsdsrc/b_exp.c",
@@ -294,6 +295,7 @@ cc_library {
                 ],
             },
             instruction_set: "arm",
+            ldflags: ["-Wl,--hash-style=both"],
             version_script: "libm.arm.map",
         },
 
@@ -420,6 +422,7 @@ cc_library {
                 ],
             },
             local_include_dirs: ["i387"],
+            ldflags: ["-Wl,--hash-style=both"],
             version_script: "libm.x86.map",
         },
 

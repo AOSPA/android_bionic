@@ -133,11 +133,7 @@ static bool install_filter(filter const& f) {
         static_cast<unsigned short>(f.size()),
         const_cast<struct sock_filter*>(&f[0]),
     };
-
-    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
-        PLOG(FATAL) << "Could not set to no new privs";
-        return false;
-    }
+    // This assumes either the current process has CAP_SYS_ADMIN, or PR_SET_NO_NEW_PRIVS bit is set.
     if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &prog) < 0) {
         PLOG(FATAL) << "Could not set seccomp filter of size " << f.size();
         return false;
@@ -208,10 +204,6 @@ bool _set_seccomp_filter(FilterType type) {
 #endif
 
     return install_filter(f);
-}
-
-bool set_seccomp_filter() {
-    return _set_seccomp_filter(FilterType::APP);
 }
 
 bool set_app_seccomp_filter() {

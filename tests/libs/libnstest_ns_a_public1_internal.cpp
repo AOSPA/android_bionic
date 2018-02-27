@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SECCOMP_POLICY_H
-#define SECCOMP_POLICY_H
+static const char ns_a_public1_internal_string[] = "libnstest_ns_a_public1_internal.so";
 
-#include <stddef.h>
-#include <linux/filter.h>
-
-bool set_app_seccomp_filter();
-bool set_system_seccomp_filter();
-bool set_global_seccomp_filter();
-
-#endif
+extern "C" const char* get_ns_a_public1_internal_string() {
+  return ns_a_public1_internal_string;
+}

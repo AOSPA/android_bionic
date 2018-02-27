@@ -10,15 +10,12 @@ libc_common_src_files = [
     "bionic/pututline.c",
     "bionic/sched_cpualloc.c",
     "bionic/sched_cpucount.c",
-    "bionic/sigblock.c",
-    "bionic/siginterrupt.c",
-    "bionic/sigsetmask.c",
     "stdio/fmemopen.cpp",
     "stdio/parsefloat.c",
     "stdio/refill.c",
     "stdio/stdio.cpp",
     "stdio/stdio_ext.cpp",
-    "stdio/vfscanf.c",
+    "stdio/vfscanf.cpp",
     "stdio/vfwscanf.c",
     "stdlib/exit.c",
 ]
@@ -39,6 +36,7 @@ libc_common_flags = [
     "-Wall",
     "-Wextra",
     "-Wunused",
+    "-Wno-char-subscripts",
     "-Wno-deprecated-declarations",
     "-Wno-gcc-compat",
     "-Wframe-larger-than=2048",
@@ -1335,25 +1333,7 @@ cc_library_static {
         "bionic/seteuid.cpp",
         "bionic/setpgrp.cpp",
         "bionic/sigaction.cpp",
-        "bionic/sigaddset.cpp",
-        "bionic/sigdelset.cpp",
-        "bionic/sigemptyset.cpp",
-        "bionic/sigfillset.cpp",
-        "bionic/sighold.cpp",
-        "bionic/sigignore.cpp",
-        "bionic/sigismember.cpp",
         "bionic/signal.cpp",
-        "bionic/signalfd.cpp",
-        "bionic/sigpause.cpp",
-        "bionic/sigpending.cpp",
-        "bionic/sigprocmask.cpp",
-        "bionic/sigqueue.cpp",
-        "bionic/sigrelse.cpp",
-        "bionic/sigset.cpp",
-        "bionic/sigsuspend.cpp",
-        "bionic/sigtimedwait.cpp",
-        "bionic/sigwait.cpp",
-        "bionic/sigwaitinfo.cpp",
         "bionic/socket.cpp",
         "bionic/spawn.cpp",
         "bionic/stat.cpp",
@@ -1374,6 +1354,7 @@ cc_library_static {
         "bionic/sys_sem.cpp",
         "bionic/sys_shm.cpp",
         "bionic/sys_siglist.c",
+        "bionic/sys_signalfd.cpp",
         "bionic/sys_signame.c",
         "bionic/sys_time.cpp",
         "bionic/sysinfo.cpp",
@@ -1669,6 +1650,7 @@ cc_library_static {
 cc_library {
     defaults: ["libc_defaults"],
     name: "libc",
+    static_ndk_lib: true,
     product_variables: {
         platform_sdk_version: {
             asflags: ["-DPLATFORM_SDK_VERSION=%d"],
@@ -1723,6 +1705,9 @@ cc_library {
 
     arch: {
         arm: {
+            //TODO: This is to work around b/24465209. Remove after root cause is fixed
+            ldflags: ["-Wl,--hash-style=both"],
+
             // Don't re-export new/delete and friends, even if the compiler really wants to.
             version_script: "libc.arm.map",
 
@@ -1753,6 +1738,9 @@ cc_library {
             version_script: "libc.mips64.map",
         },
         x86: {
+            //TODO: This is to work around b/24465209. Remove after root cause is fixed
+            ldflags: ["-Wl,--hash-style=both"],
+
             // Don't re-export new/delete and friends, even if the compiler really wants to.
             version_script: "libc.x86.map",
         },
@@ -1775,11 +1763,14 @@ cc_library {
         "bionic/new.cpp",
     ],
     name: "libstdc++",
+    static_ndk_lib: true,
     system_shared_libs: ["libc"],
     static_libs: ["libasync_safe"],
 
+    //TODO (dimitry): This is to work around b/24465209. Remove after root cause is fixed
     arch: {
         arm: {
+            ldflags: ["-Wl,--hash-style=both"],
             version_script: "libstdc++.arm.map",
         },
         arm64: {
@@ -1792,6 +1783,7 @@ cc_library {
             version_script: "libstdc++.mips64.map",
         },
         x86: {
+            ldflags: ["-Wl,--hash-style=both"],
             version_script: "libstdc++.x86.map",
         },
         x86_64: {
