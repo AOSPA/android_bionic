@@ -20,57 +20,45 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <thread>
+
 #include <gtest/gtest.h>
 
 #include "ScopedSignalHandler.h"
 
-static size_t SIGNAL_MIN() {
+static int SIGNAL_MIN() {
   return 1; // Signals start at 1 (SIGHUP), not 0.
 }
 
-static size_t SIGNAL_MAX() {
-  size_t result = SIGRTMAX;
-
-#if defined(__BIONIC__) && !defined(__mips__) && !defined(__LP64__)
-  // 32-bit bionic's sigset_t is too small for ARM and x86: 32 bits instead of 64.
-  // This means you can't refer to any of the real-time signals.
-  // See http://b/3038348 and http://b/5828899.
-  result = 32;
-#else
-  // Otherwise, C libraries should be perfectly capable of using their largest signal.
-  if (sizeof(sigset_t) * 8 < static_cast<size_t>(SIGRTMAX)) {
-    abort();
-  }
-#endif
-
-  return result;
+template <typename SigSetT>
+static int SIGNAL_MAX(SigSetT* set) {
+  return sizeof(*set) * 8;
 }
 
-template <typename Fn>
-static void TestSigSet1(Fn fn) {
-  // NULL sigset_t*.
-  sigset_t* set_ptr = NULL;
+template <typename SigSetT>
+static void TestSigSet1(int (fn)(SigSetT*)) {
+  // NULL sigset_t*/sigset64_t*.
+  SigSetT* set_ptr = NULL;
   errno = 0;
   ASSERT_EQ(-1, fn(set_ptr));
   ASSERT_EQ(EINVAL, errno);
 
   // Non-NULL.
-  sigset_t set;
+  SigSetT set = {};
   errno = 0;
   ASSERT_EQ(0, fn(&set));
   ASSERT_EQ(0, errno);
 }
 
-template <typename Fn>
-static void TestSigSet2(Fn fn) {
-  // NULL sigset_t*.
-  sigset_t* set_ptr = NULL;
+template <typename SigSetT>
+static void TestSigSet2(int (fn)(SigSetT*, int)) {
+  // NULL sigset_t*/sigset64_t*.
+  SigSetT* set_ptr = NULL;
   errno = 0;
   ASSERT_EQ(-1, fn(set_ptr, SIGSEGV));
   ASSERT_EQ(EINVAL, errno);
 
-  sigset_t set;
-  sigemptyset(&set);
+  SigSetT set = {};
 
   // Bad signal number: too small.
   errno = 0;
@@ -79,35 +67,65 @@ static void TestSigSet2(Fn fn) {
 
   // Bad signal number: too high.
   errno = 0;
-  ASSERT_EQ(-1, fn(&set, SIGNAL_MAX() + 1));
+  ASSERT_EQ(-1, fn(&set, SIGNAL_MAX(&set) + 1));
   ASSERT_EQ(EINVAL, errno);
 
   // Good signal numbers, low and high ends of range.
   errno = 0;
   ASSERT_EQ(0, fn(&set, SIGNAL_MIN()));
   ASSERT_EQ(0, errno);
-  ASSERT_EQ(0, fn(&set, SIGNAL_MAX()));
+  ASSERT_EQ(0, fn(&set, SIGNAL_MAX(&set)));
   ASSERT_EQ(0, errno);
-}
-
-TEST(signal, sigismember_invalid) {
-  TestSigSet2(sigismember);
 }
 
 TEST(signal, sigaddset_invalid) {
   TestSigSet2(sigaddset);
 }
 
+TEST(signal, sigaddset64_invalid) {
+#if defined(__BIONIC__)
+  TestSigSet2(sigaddset64);
+#endif
+}
+
 TEST(signal, sigdelset_invalid) {
   TestSigSet2(sigdelset);
+}
+
+TEST(signal, sigdelset64_invalid) {
+#if defined(__BIONIC__)
+  TestSigSet2(sigdelset64);
+#endif
 }
 
 TEST(signal, sigemptyset_invalid) {
   TestSigSet1(sigemptyset);
 }
 
+TEST(signal, sigemptyset64_invalid) {
+#if defined(__BIONIC__)
+  TestSigSet1(sigemptyset64);
+#endif
+}
+
 TEST(signal, sigfillset_invalid) {
   TestSigSet1(sigfillset);
+}
+
+TEST(signal, sigfillset64_invalid) {
+#if defined(__BIONIC__)
+  TestSigSet1(sigfillset64);
+#endif
+}
+
+TEST(signal, sigismember_invalid) {
+  TestSigSet2(sigismember);
+}
+
+TEST(signal, sigismember64_invalid) {
+#if defined(__BIONIC__)
+  TestSigSet2(sigismember64);
+#endif
 }
 
 TEST(signal, raise_invalid) {
@@ -129,12 +147,8 @@ TEST(signal, raise_in_signal_handler) {
   raise(SIGALRM);
 }
 
-static void HandleSIGALRM(int signal_number) {
-  ASSERT_EQ(SIGALRM, signal_number);
-}
-
-TEST(signal, sigwait) {
-  ScopedSignalHandler ssh(SIGALRM, HandleSIGALRM);
+TEST(signal, sigwait_SIGALRM) {
+  ScopedSignalHandler ssh(SIGALRM, [](int sig) { ASSERT_EQ(SIGALRM, sig); });
 
   sigset_t wait_set;
   sigemptyset(&wait_set);
@@ -149,38 +163,57 @@ TEST(signal, sigwait) {
   ASSERT_EQ(SIGALRM, received_signal);
 }
 
-static int g_sigsuspend_test_helper_call_count = 0;
+TEST(signal, sigwait64_SIGRTMIN) {
+  ScopedSignalHandler ssh(SIGRTMIN, [](int sig) { ASSERT_EQ(SIGRTMIN, sig); });
 
-static void SigSuspendTestHelper(int) {
-  ++g_sigsuspend_test_helper_call_count;
+  sigset64_t wait_set;
+  sigemptyset64(&wait_set);
+  sigaddset64(&wait_set, SIGRTMIN);
+
+  pid_t pid = getpid();
+  std::thread thread([&pid]() {
+    usleep(5000);
+    kill(pid, SIGRTMIN);
+  });
+
+  int received_signal;
+  errno = 0;
+  ASSERT_EQ(0, sigwait64(&wait_set, &received_signal));
+  ASSERT_EQ(0, errno);
+  ASSERT_EQ(SIGRTMIN, received_signal);
+
+  thread.join();
 }
 
+static int g_sigsuspend_signal_handler_call_count = 0;
+
 TEST(signal, sigsuspend_sigpending) {
+  SignalMaskRestorer smr;
+
   // Block SIGALRM.
   sigset_t just_SIGALRM;
   sigemptyset(&just_SIGALRM);
   sigaddset(&just_SIGALRM, SIGALRM);
-  sigset_t original_set;
-  ASSERT_EQ(0, sigprocmask(SIG_BLOCK, &just_SIGALRM, &original_set));
+  ASSERT_EQ(0, sigprocmask(SIG_BLOCK, &just_SIGALRM, nullptr));
 
-  ScopedSignalHandler ssh(SIGALRM, SigSuspendTestHelper);
+  ScopedSignalHandler ssh(SIGALRM, [](int) { ++g_sigsuspend_signal_handler_call_count; });
 
   // There should be no pending signals.
   sigset_t pending;
   sigemptyset(&pending);
   ASSERT_EQ(0, sigpending(&pending));
-  for (size_t i = SIGNAL_MIN(); i <= SIGNAL_MAX(); ++i) {
+  for (int i = SIGNAL_MIN(); i <= SIGNAL_MAX(&pending); ++i) {
     EXPECT_FALSE(sigismember(&pending, i)) << i;
   }
 
   // Raise SIGALRM and check our signal handler wasn't called.
   raise(SIGALRM);
-  ASSERT_EQ(0, g_sigsuspend_test_helper_call_count);
+  ASSERT_EQ(0, g_sigsuspend_signal_handler_call_count);
 
   // We should now have a pending SIGALRM but nothing else.
   sigemptyset(&pending);
   ASSERT_EQ(0, sigpending(&pending));
-  for (size_t i = SIGNAL_MIN(); i <= SIGNAL_MAX(); ++i) {
+  for (int i = SIGNAL_MIN(); i <= SIGNAL_MAX(&pending); ++i) {
     EXPECT_EQ((i == SIGALRM), sigismember(&pending, i));
   }
 
@@ -191,61 +224,108 @@ TEST(signal, sigsuspend_sigpending) {
   ASSERT_EQ(-1, sigsuspend(&not_SIGALRM));
   ASSERT_EQ(EINTR, errno);
   // ...and check that we now receive our pending SIGALRM.
-  ASSERT_EQ(1, g_sigsuspend_test_helper_call_count);
-
-  // Restore the original set.
-  ASSERT_EQ(0, sigprocmask(SIG_SETMASK, &original_set, NULL));
+  ASSERT_EQ(1, g_sigsuspend_signal_handler_call_count);
 }
 
-static void EmptySignalHandler(int) {}
-static void EmptySignalAction(int, siginfo_t*, void*) {}
+static int g_sigsuspend64_signal_handler_call_count = 0;
 
-TEST(signal, sigaction) {
+TEST(signal, sigsuspend64_sigpending64) {
+  SignalMaskRestorer smr;
+
+  // Block SIGRTMIN.
+  sigset64_t just_SIGRTMIN;
+  sigemptyset64(&just_SIGRTMIN);
+  sigaddset64(&just_SIGRTMIN, SIGRTMIN);
+  ASSERT_EQ(0, sigprocmask64(SIG_BLOCK, &just_SIGRTMIN, nullptr));
+
+  ScopedSignalHandler ssh(SIGRTMIN, [](int) { ++g_sigsuspend64_signal_handler_call_count; });
+
+  // There should be no pending signals.
+  sigset64_t pending;
+  sigemptyset64(&pending);
+  ASSERT_EQ(0, sigpending64(&pending));
+  for (int i = SIGNAL_MIN(); i <= SIGNAL_MAX(&pending); ++i) {
+    EXPECT_FALSE(sigismember64(&pending, i)) << i;
+  }
+
+  // Raise SIGRTMIN and check our signal handler wasn't called.
+  raise(SIGRTMIN);
+  ASSERT_EQ(0, g_sigsuspend64_signal_handler_call_count);
+
+  // We should now have a pending SIGRTMIN but nothing else.
+  sigemptyset64(&pending);
+  ASSERT_EQ(0, sigpending64(&pending));
+  for (int i = SIGNAL_MIN(); i <= SIGNAL_MAX(&pending); ++i) {
+    EXPECT_EQ((i == SIGRTMIN), sigismember64(&pending, i));
+  }
+
+  // Use sigsuspend64 to block everything except SIGRTMIN...
+  sigset64_t not_SIGRTMIN;
+  sigfillset64(&not_SIGRTMIN);
+  sigdelset64(&not_SIGRTMIN, SIGRTMIN);
+  ASSERT_EQ(-1, sigsuspend64(&not_SIGRTMIN));
+  ASSERT_EQ(EINTR, errno);
+  // ...and check that we now receive our pending SIGRTMIN.
+  ASSERT_EQ(1, g_sigsuspend64_signal_handler_call_count);
+}
+
+template <typename SigActionT, typename SigSetT>
+static void TestSigAction(int (sigaction_fn)(int, const SigActionT*, SigActionT*),
+                          int (sigaddset_fn)(SigSetT*, int),
+                          int sig) {
   // Both bionic and glibc set SA_RESTORER when talking to the kernel on arm,
   // arm64, x86, and x86-64. The version of glibc we're using also doesn't
   // define SA_RESTORER, but luckily it's the same value everywhere, and mips
   // doesn't use the bit for anything.
   static const unsigned sa_restorer = 0x4000000;
 
-  // See what's currently set for SIGALRM.
-  struct sigaction original_sa;
-  memset(&original_sa, 0, sizeof(original_sa));
-  ASSERT_EQ(0, sigaction(SIGALRM, NULL, &original_sa));
+  // See what's currently set for this signal.
+  SigActionT original_sa = {};
+  ASSERT_EQ(0, sigaction_fn(sig, NULL, &original_sa));
   ASSERT_TRUE(original_sa.sa_handler == NULL);
   ASSERT_TRUE(original_sa.sa_sigaction == NULL);
   ASSERT_EQ(0U, original_sa.sa_flags & ~sa_restorer);
 
   // Set a traditional sa_handler signal handler.
-  struct sigaction sa;
-  memset(&sa, 0, sizeof(sa));
-  sigaddset(&sa.sa_mask, SIGALRM);
+  auto no_op_signal_handler = [](int) {};
+  SigActionT sa = {};
+  sigaddset_fn(&sa.sa_mask, sig);
   sa.sa_flags = SA_ONSTACK;
-  sa.sa_handler = EmptySignalHandler;
-  ASSERT_EQ(0, sigaction(SIGALRM, &sa, NULL));
+  sa.sa_handler = no_op_signal_handler;
+  ASSERT_EQ(0, sigaction_fn(sig, &sa, NULL));
 
   // Check that we can read it back.
-  memset(&sa, 0, sizeof(sa));
-  ASSERT_EQ(0, sigaction(SIGALRM, NULL, &sa));
-  ASSERT_TRUE(sa.sa_handler == EmptySignalHandler);
+  sa = {};
+  ASSERT_EQ(0, sigaction_fn(sig, NULL, &sa));
+  ASSERT_TRUE(sa.sa_handler == no_op_signal_handler);
   ASSERT_TRUE((void*) sa.sa_sigaction == (void*) sa.sa_handler);
   ASSERT_EQ(static_cast<unsigned>(SA_ONSTACK), sa.sa_flags & ~sa_restorer);
 
   // Set a new-style sa_sigaction signal handler.
-  memset(&sa, 0, sizeof(sa));
-  sigaddset(&sa.sa_mask, SIGALRM);
+  auto no_op_sigaction = [](int, siginfo_t*, void*) {};
+  sa = {};
+  sigaddset_fn(&sa.sa_mask, sig);
   sa.sa_flags = SA_ONSTACK | SA_SIGINFO;
-  sa.sa_sigaction = EmptySignalAction;
-  ASSERT_EQ(0, sigaction(SIGALRM, &sa, NULL));
+  sa.sa_sigaction = no_op_sigaction;
+  ASSERT_EQ(0, sigaction_fn(sig, &sa, NULL));
 
   // Check that we can read it back.
-  memset(&sa, 0, sizeof(sa));
-  ASSERT_EQ(0, sigaction(SIGALRM, NULL, &sa));
-  ASSERT_TRUE(sa.sa_sigaction == EmptySignalAction);
+  sa = {};
+  ASSERT_EQ(0, sigaction_fn(sig, NULL, &sa));
+  ASSERT_TRUE(sa.sa_sigaction == no_op_sigaction);
   ASSERT_TRUE((void*) sa.sa_sigaction == (void*) sa.sa_handler);
   ASSERT_EQ(static_cast<unsigned>(SA_ONSTACK | SA_SIGINFO), sa.sa_flags & ~sa_restorer);
 
   // Put everything back how it was.
-  ASSERT_EQ(0, sigaction(SIGALRM, &original_sa, NULL));
+  ASSERT_EQ(0, sigaction_fn(sig, &original_sa, NULL));
+}
+
+TEST(signal, sigaction) {
+  TestSigAction(sigaction, sigaddset, SIGALRM);
+}
+
+TEST(signal, sigaction64_SIGRTMIN) {
+  TestSigAction(sigaction64, sigaddset64, SIGRTMIN);
 }
 
 TEST(signal, sys_signame) {
@@ -301,12 +381,13 @@ TEST(signal, sigqueue) {
 }
 
 TEST(signal, sigwaitinfo) {
+  SignalMaskRestorer smr;
+
   // Block SIGALRM.
   sigset_t just_SIGALRM;
   sigemptyset(&just_SIGALRM);
   sigaddset(&just_SIGALRM, SIGALRM);
-  sigset_t original_set;
-  ASSERT_EQ(0, sigprocmask(SIG_BLOCK, &just_SIGALRM, &original_set));
+  ASSERT_EQ(0, sigprocmask(SIG_BLOCK, &just_SIGALRM, nullptr));
 
   // Raise SIGALRM.
   sigval_t sigval;
@@ -320,38 +401,75 @@ TEST(signal, sigwaitinfo) {
   ASSERT_EQ(0, errno);
   ASSERT_EQ(SIGALRM, info.si_signo);
   ASSERT_EQ(1, info.si_value.sival_int);
+}
 
-  ASSERT_EQ(0, sigprocmask(SIG_SETMASK, &original_set, NULL));
+TEST(signal, sigwaitinfo64_SIGRTMIN) {
+  SignalMaskRestorer smr;
+
+  // Block SIGRTMIN.
+  sigset64_t just_SIGRTMIN;
+  sigemptyset64(&just_SIGRTMIN);
+  sigaddset64(&just_SIGRTMIN, SIGRTMIN);
+  ASSERT_EQ(0, sigprocmask64(SIG_BLOCK, &just_SIGRTMIN, nullptr));
+
+  // Raise SIGRTMIN.
+  sigval_t sigval;
+  sigval.sival_int = 1;
+  ASSERT_EQ(0, sigqueue(getpid(), SIGRTMIN, sigval));
+
+  // Get pending SIGRTMIN.
+  siginfo_t info;
+  errno = 0;
+  ASSERT_EQ(SIGRTMIN, sigwaitinfo64(&just_SIGRTMIN, &info));
+  ASSERT_EQ(0, errno);
+  ASSERT_EQ(SIGRTMIN, info.si_signo);
+  ASSERT_EQ(1, info.si_value.sival_int);
 }
 
 TEST(signal, sigtimedwait) {
+  SignalMaskRestorer smr;
+
   // Block SIGALRM.
   sigset_t just_SIGALRM;
   sigemptyset(&just_SIGALRM);
   sigaddset(&just_SIGALRM, SIGALRM);
-  sigset_t original_set;
-  ASSERT_EQ(0, sigprocmask(SIG_BLOCK, &just_SIGALRM, &original_set));
+  ASSERT_EQ(0, sigprocmask(SIG_BLOCK, &just_SIGALRM, nullptr));
 
   // Raise SIGALRM.
-  sigval_t sigval;
-  sigval.sival_int = 1;
+  sigval_t sigval = { .sival_int = 1 };
   ASSERT_EQ(0, sigqueue(getpid(), SIGALRM, sigval));
 
   // Get pending SIGALRM.
   siginfo_t info;
-  struct timespec timeout;
-  timeout.tv_sec = 2;
-  timeout.tv_nsec = 0;
+  timespec timeout = { .tv_sec = 2, .tv_nsec = 0 };
   errno = 0;
   ASSERT_EQ(SIGALRM, sigtimedwait(&just_SIGALRM, &info, &timeout));
   ASSERT_EQ(0, errno);
+}
 
-  ASSERT_EQ(0, sigprocmask(SIG_SETMASK, &original_set, NULL));
+TEST(signal, sigtimedwait64_SIGRTMIN) {
+  SignalMaskRestorer smr;
+
+  // Block SIGRTMIN.
+  sigset64_t just_SIGRTMIN;
+  sigemptyset64(&just_SIGRTMIN);
+  sigaddset64(&just_SIGRTMIN, SIGRTMIN);
+  ASSERT_EQ(0, sigprocmask64(SIG_BLOCK, &just_SIGRTMIN, nullptr));
+
+  // Raise SIGALRM.
+  sigval_t sigval = { .sival_int = 1 };
+  ASSERT_EQ(0, sigqueue(getpid(), SIGRTMIN, sigval));
+
+  // Get pending SIGALRM.
+  siginfo_t info;
+  timespec timeout = { .tv_sec = 2, .tv_nsec = 0 };
+  errno = 0;
+  ASSERT_EQ(SIGRTMIN, sigtimedwait64(&just_SIGRTMIN, &info, &timeout));
+  ASSERT_EQ(0, errno);
 }
 
 static int64_t NanoTime() {
-  struct timespec t;
-  t.tv_sec = t.tv_nsec = 0;
+  timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
   return static_cast<int64_t>(t.tv_sec) * 1000000000LL + t.tv_nsec;
 }
@@ -367,9 +485,7 @@ TEST(signal, sigtimedwait_timeout) {
   // Wait timeout.
   int64_t start_time = NanoTime();
   siginfo_t info;
-  struct timespec timeout;
-  timeout.tv_sec = 0;
-  timeout.tv_nsec = 1000000;
+  timespec timeout = { .tv_sec = 0, .tv_nsec = 1000000 };
   errno = 0;
   ASSERT_EQ(-1, sigtimedwait(&just_SIGALRM, &info, &timeout));
   ASSERT_EQ(EAGAIN, errno);
@@ -387,8 +503,7 @@ TEST(signal, rt_tgsigqueueinfo) {
     "* https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=66dd34ad31e5963d72a700ec3f2449291d322921\n";
   static siginfo received;
 
-  struct sigaction handler;
-  memset(&handler, 0, sizeof(handler));
+  struct sigaction handler = {};
   handler.sa_sigaction = [](int, siginfo_t* siginfo, void*) { received = *siginfo; };
   handler.sa_flags = SA_SIGINFO;
 
@@ -411,17 +526,19 @@ TEST(signal, rt_tgsigqueueinfo) {
                                             << sent.si_code << ", received " << received.si_code
                                             << error_msg;
 }
+#endif
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__i386__) || defined(__x86_64__)
 TEST(signal, sigset_size) {
   // The setjmp implementations for ARM, AArch64, x86, and x86_64 assume that sigset_t can fit in a
   // long. This is true because ARM and x86 have broken rt signal support, and AArch64 and x86_64
   // both have a SIGRTMAX defined as 64.
+#if defined(__arm__) || defined(__aarch64__) || defined(__i386__) || defined(__x86_64__)
+#if defined(__BIONIC__)
   static_assert(sizeof(sigset_t) <= sizeof(long), "sigset_t doesn't fit in a long");
+#endif
+  static_assert(sizeof(sigset64_t)*8 >= 64, "sigset64_t too small for real-time signals");
+#endif
 }
-
-#endif
-#endif
 
 TEST(signal, sigignore_EINVAL) {
   errno = 0;
