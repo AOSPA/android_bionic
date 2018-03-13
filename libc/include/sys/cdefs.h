@@ -120,6 +120,7 @@
 
 #define __printflike(x, y) __attribute__((__format__(printf, x, y)))
 #define __scanflike(x, y) __attribute__((__format__(scanf, x, y)))
+#define __strftimelike(x) __attribute__((__format__(strftime, x, 0)))
 
 /*
  * GNU C version 2.96 added explicit branch prediction so that
@@ -243,6 +244,16 @@
 #define __RENAME_LDBL(rewrite,rewrite_api_level,regular_api_level) __INTRODUCED_IN(regular_api_level)
 #else
 #define __RENAME_LDBL(rewrite,rewrite_api_level,regular_api_level) __RENAME(rewrite) __INTRODUCED_IN(rewrite_api_level)
+#endif
+
+/*
+ * On all architectures, `struct stat` == `struct stat64`, but LP32 didn't gain the *64 functions
+ * until API level 21.
+ */
+#if defined(__LP64__) || defined(__BIONIC_LP32_USE_STAT64)
+#define __RENAME_STAT64(rewrite,rewrite_api_level,regular_api_level) __INTRODUCED_IN(regular_api_level)
+#else
+#define __RENAME_STAT64(rewrite,rewrite_api_level,regular_api_level) __RENAME(rewrite) __INTRODUCED_IN(rewrite_api_level)
 #endif
 
 /* glibc compatibility. */

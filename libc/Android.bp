@@ -33,6 +33,7 @@ libc_common_src_files_32 = [
 
 libc_common_flags = [
     "-D_LIBC=1",
+    "-D__BIONIC_LP32_USE_STAT64",
     "-Wall",
     "-Wextra",
     "-Wunused",
@@ -46,6 +47,10 @@ libc_common_flags = [
     "-Werror=int-to-pointer-cast",
     "-Werror=type-limits",
     "-Werror",
+
+    // Clang's exit-time destructor registration hides __dso_handle, but
+    // __dso_handle needs to have default visibility on ARM32. See b/73485611.
+    "-Wexit-time-destructors",
 ]
 
 // Define some common cflags
@@ -1278,6 +1283,7 @@ cc_library_static {
         "bionic/getpriority.cpp",
         "bionic/gettid.cpp",
         "bionic/grp_pwd.cpp",
+        "bionic/grp_pwd_file.cpp",
         "bionic/iconv.cpp",
         "bionic/icu_wrappers.cpp",
         "bionic/ifaddrs.cpp",

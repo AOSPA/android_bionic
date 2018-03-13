@@ -256,7 +256,12 @@ TEST(dlfcn, dlopen_vdso) {
     return;
   }
 #endif
-  void* handle = dlopen("linux-vdso.so.1", RTLD_NOW);
+
+  const char* vdso_name = "linux-vdso.so.1";
+#if defined(__i386__)
+  vdso_name = "linux-gate.so.1";
+#endif
+  void* handle = dlopen(vdso_name, RTLD_NOW);
   ASSERT_TRUE(handle != nullptr) << dlerror();
   dlclose(handle);
 }
@@ -1118,7 +1123,7 @@ TEST(dlfcn, rtld_next_known_symbol) {
 
 // Check that RTLD_NEXT of a libc symbol works in dlopened library
 TEST(dlfcn, rtld_next_from_library) {
-  void* library_with_fclose = dlopen("libtest_check_rtld_next_from_library.so", RTLD_NOW);
+  void* library_with_fclose = dlopen("libtest_check_rtld_next_from_library.so", RTLD_NOW | RTLD_GLOBAL);
   ASSERT_TRUE(library_with_fclose != nullptr) << dlerror();
   void* expected_addr = dlsym(RTLD_DEFAULT, "fclose");
   ASSERT_TRUE(expected_addr != nullptr) << dlerror();
