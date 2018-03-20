@@ -1031,6 +1031,14 @@ cc_library_static {
                     "arch-arm64/generic/bionic/memmove.S",
                 ],
             },
+            kryo: {
+                srcs: [
+                    "arch-arm64/kryo/bionic/memcpy.S",
+                ],
+                exclude_srcs: [
+                    "arch-arm64/generic/bionic/memcpy.S",
+                ],
+            },
         },
 
         mips: {
@@ -1342,6 +1350,7 @@ cc_library_static {
         "bionic/setpgrp.cpp",
         "bionic/sigaction.cpp",
         "bionic/signal.cpp",
+        "bionic/sigprocmask.cpp",
         "bionic/socket.cpp",
         "bionic/spawn.cpp",
         "bionic/stat.cpp",

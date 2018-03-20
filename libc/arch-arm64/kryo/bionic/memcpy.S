@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2008 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,42 +26,23 @@
  * SUCH DAMAGE.
  */
 
-#include "linker.h"
-#include "linker_globals.h"
-#include "linker_namespaces.h"
+// Prototype: void *memcpy (void *dst, const void *src, size_t count).
 
-#include "android-base/stringprintf.h"
+#include <private/bionic_asm.h>
 
-int g_argc = 0;
-char** g_argv = nullptr;
-char** g_envp = nullptr;
+ENTRY(__memcpy_chk)
+  cmp x2, x3
+  bls memcpy
 
-android_namespace_t g_default_namespace;
+  // Preserve for accurate backtrace.
+  stp x29, x30, [sp, -16]!
+  .cfi_def_cfa_offset 16
+  .cfi_rel_offset x29, 0
+  .cfi_rel_offset x30, 8
 
-std::unordered_map<uintptr_t, soinfo*> g_soinfo_handles_map;
+  bl __memcpy_chk_fail
+END(__memcpy_chk)
 
-static char __linker_dl_err_buf[768];
-
-char* linker_get_error_buffer() {
-  return &__linker_dl_err_buf[0];
-}
-
-size_t linker_get_error_buffer_size() {
-  return sizeof(__linker_dl_err_buf);
-}
-
-void DL_WARN_documented_change(int api_level, const char* doc_link, const char* fmt, ...) {
-  std::string result{"Warning: "};
-
-  va_list ap;
-  va_start(ap, fmt);
-  android::base::StringAppendV(&result, fmt, ap);
-  va_end(ap);
-
-  android::base::StringAppendF(&result,
-                               " and will not work when the app moves to API level %d or later "
-                               "(https://android.googlesource.com/platform/bionic/+/master/%s) "
-                               "(allowing for now because this app's target API level is still %d)",
-                               api_level, doc_link, get_application_target_sdk_version());
-  DL_WARN("%s", result.c_str());
-}
+ENTRY(memcpy)
+  #include "memcpy_base.S"
+END(memcpy)

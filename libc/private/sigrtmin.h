@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,42 +26,25 @@
  * SUCH DAMAGE.
  */
 
-#include "linker.h"
-#include "linker_globals.h"
-#include "linker_namespaces.h"
+#pragma once
 
-#include "android-base/stringprintf.h"
+#include <sys/cdefs.h>
 
-int g_argc = 0;
-char** g_argv = nullptr;
-char** g_envp = nullptr;
+#include <signal.h>
 
-android_namespace_t g_default_namespace;
+// Realtime signals reserved for internal use:
+//   32 (__SIGRTMIN + 0)        POSIX timers
+//   33 (__SIGRTMIN + 1)        libbacktrace
+//   34 (__SIGRTMIN + 2)        libcore
+//   35 (__SIGRTMIN + 3)        debuggerd -b
+//
+// If you change this, also change __ndk_legacy___libc_current_sigrtmin
+// in <android/legacy_signal_inlines.h> to match.
 
-std::unordered_map<uintptr_t, soinfo*> g_soinfo_handles_map;
-
-static char __linker_dl_err_buf[768];
-
-char* linker_get_error_buffer() {
-  return &__linker_dl_err_buf[0];
-}
-
-size_t linker_get_error_buffer_size() {
-  return sizeof(__linker_dl_err_buf);
-}
-
-void DL_WARN_documented_change(int api_level, const char* doc_link, const char* fmt, ...) {
-  std::string result{"Warning: "};
-
-  va_list ap;
-  va_start(ap, fmt);
-  android::base::StringAppendV(&result, fmt, ap);
-  va_end(ap);
-
-  android::base::StringAppendF(&result,
-                               " and will not work when the app moves to API level %d or later "
-                               "(https://android.googlesource.com/platform/bionic/+/master/%s) "
-                               "(allowing for now because this app's target API level is still %d)",
-                               api_level, doc_link, get_application_target_sdk_version());
-  DL_WARN("%s", result.c_str());
+#define __SIGRT_RESERVED 4
+static inline __always_inline sigset64_t filter_reserved_signals(sigset64_t sigset) {
+  for (int signo = __SIGRTMIN; signo < __SIGRTMIN + __SIGRT_RESERVED; ++signo) {
+    sigdelset64(&sigset, signo);
+  }
+  return sigset;
 }
