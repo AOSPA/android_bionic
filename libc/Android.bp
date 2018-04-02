@@ -822,6 +822,7 @@ cc_library_static {
                 "arch-arm/generic/bionic/memcmp.S",
                 "arch-arm/generic/bionic/memcpy.S",
                 "arch-arm/generic/bionic/memset.S",
+                "arch-arm/generic/bionic/strchr.S",
                 "arch-arm/generic/bionic/strcmp.S",
                 "arch-arm/generic/bionic/strcpy.S",
                 "arch-arm/generic/bionic/strlen.c",
@@ -838,6 +839,7 @@ cc_library_static {
             ],
             exclude_srcs: [
                 "bionic/__memcpy_chk.cpp",
+                "bionic/strchr.cpp",
             ],
             cortex_a7: {
                 srcs: [
