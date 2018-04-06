@@ -157,6 +157,24 @@ static void BM_string_strlen(benchmark::State& state) {
 }
 BENCHMARK(BM_string_strlen)->AT_ALIGNED_ONEBUF;
 
+static void BM_string_strnlen(benchmark::State& state) {
+  const size_t nbytes = state.range(0);
+  const size_t alignment = state.range(1);
+  int maxlen = 100;
+
+  std::vector<char> buf;
+  char* buf_aligned = GetAlignedPtrFilled(&buf, alignment, nbytes + 1, 'x');
+  buf_aligned[nbytes - 1] = '\0';
+
+  volatile int c __attribute__((unused)) = 0;
+  while (state.KeepRunning()) {
+    c += strnlen(buf_aligned, maxlen);
+  }
+
+  state.SetBytesProcessed(uint64_t(state.iterations()) * uint64_t(nbytes));
+}
+BENCHMARK(BM_string_strnlen)->AT_ALIGNED_ONEBUF;
+
 static void BM_string_strcat_copy_only(benchmark::State& state) {
   const size_t nbytes = state.range(0);
   const size_t src_alignment = state.range(1);
