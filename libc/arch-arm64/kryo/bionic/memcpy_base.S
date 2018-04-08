@@ -51,12 +51,23 @@
 #endif
 #define PLDSIZE        (128)
 
+#define dstin	x0
+#define src	x1
+#define count	x2
+#define srcend	x4
+#define dstend	x5
+#define A_l	x6
+#define A_lw	w6
+#define A_h	x7
+#define A_hw	w7
+#define B_lw   w8
+#define tmp1	x9
+
 kryo_bb_memcpy:
         mov        x11, x0
         cmp        x2, #4
-        blo        kryo_bb_lt4
         cmp        x2, #16
-        blo        kryo_bb_lt16
+        blo        kryo_bb_16
         cmp        x2, #32
         blo        kryo_bb_16
         cmp        x2, #64
@@ -217,27 +228,36 @@ kryo_bb_copy_32_a:
         ldp        q0, q1, [x1], #32
         stp        q0, q1, [x0], #32
 kryo_bb_16:
-        tbz        x2, #4, kryo_bb_lt16
-        ldr        q7, [x1], #16
-        str        q7, [x0], #16
-        ands        x2, x2, #0x0f
-        beq        kryo_bb_exit
-kryo_bb_lt16:
-        tbz        x2, #3, kryo_bb_lt8
-        ldr        x3, [x1], #8
-        str        x3, [x0], #8
-kryo_bb_lt8:
-        tbz        x2, #2, kryo_bb_lt4
-        ldr        w3, [x1], #4
-        str        w3, [x0], #4
-kryo_bb_lt4:
-        tbz        x2, #1, kryo_bb_lt2
-        ldrh        w3, [x1], #2
-        strh        w3, [x0], #2
-kryo_bb_lt2:
-        tbz        x2, #0, kryo_bb_exit
-        ldrb        w3, [x1], #1
-        strb        w3, [x0], #1
+	cmp	count, 8
+	b.lo	1f
+	ldr	A_l, [src]
+	ldr	A_h, [srcend, -8]
+	str	A_l, [dstin]
+	str	A_h, [dstend, -8]
+	ret
+	.p2align 4
+
+1:
+	tbz	count, 2, 1f
+	ldr	A_lw, [src]
+	ldr	A_hw, [srcend, -4]
+	str	A_lw, [dstin]
+	str	A_hw, [dstend, -4]
+	ret
+
+	/* Copy 0..3 bytes.  Use a branchless sequence that copies the same
+	   byte 3 times if count==1, or the 2nd byte twice if count==2.  */
+1:
+	cbz	count, 2f
+	lsr	tmp1, count, 1
+	ldrb	A_lw, [src]
+	ldrb	A_hw, [srcend, -1]
+	ldrb	B_lw, [src, tmp1]
+	strb	A_lw, [dstin]
+	strb	B_lw, [dstin, tmp1]
+	strb	A_hw, [dstend, -1]
+2:	ret
+	.p2align 4
 kryo_bb_exit:
         mov        x0, x11
         ret
