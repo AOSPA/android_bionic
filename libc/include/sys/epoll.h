@@ -34,7 +34,6 @@
 #include <signal.h> /* For sigset_t. */
 
 #include <linux/eventpoll.h>
-/* TODO: https://lkml.org/lkml/2017/2/23/416 has a better fix. */
 
 __BEGIN_DECLS
 
