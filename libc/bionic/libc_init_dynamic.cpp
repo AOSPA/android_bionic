@@ -78,6 +78,8 @@ __LIBC_HIDDEN__ void* __libc_sysinfo = reinterpret_cast<void*>(__libc_int0x80);
 // protector.
 __attribute__((noinline))
 static void __libc_preinit_impl(KernelArgumentBlock& args) {
+  __libc_shared_globals = args.shared_globals;
+
   __libc_init_globals(args);
   __libc_init_common(args);
 
@@ -128,7 +130,7 @@ __noreturn void __libc_init(void* raw_args,
   // so we need to ensure that these are called when the program exits
   // normally.
   if (structors->fini_array) {
-    __cxa_atexit(__libc_fini,structors->fini_array,NULL);
+    __cxa_atexit(__libc_fini,structors->fini_array,nullptr);
   }
 
   exit(slingshot(args.argc, args.argv, args.envp));

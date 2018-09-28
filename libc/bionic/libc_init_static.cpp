@@ -45,6 +45,10 @@
 #include "private/bionic_tls.h"
 #include "private/KernelArgumentBlock.h"
 
+#if __has_feature(hwaddress_sanitizer)
+#include <sanitizer/hwasan_interface.h>
+#endif
+
 // Leave the variable uninitialized for the sake of the dynamic loader, which
 // links in this file. The loader will initialize this variable before
 // relocating itself.
@@ -85,17 +89,21 @@ static void apply_gnu_relro() {
 //
 // The 'structors' parameter contains pointers to various initializer
 // arrays that must be run before the program's 'main' routine is launched.
-
-__noreturn void __libc_init(void* raw_args,
-                            void (*onexit)(void) __unused,
-                            int (*slingshot)(int, char**, char**),
-                            structors_array_t const * const structors) {
+__noreturn static void __real_libc_init(void *raw_args,
+                                        void (*onexit)(void) __unused,
+                                        int (*slingshot)(int, char**, char**),
+                                        structors_array_t const * const structors) {
   BIONIC_STOP_UNWIND;
 
   KernelArgumentBlock args(raw_args);
 
   // Initializing the globals requires TLS to be available for errno.
   __libc_init_main_thread(args);
+
+  static libc_shared_globals shared_globals;
+  __libc_shared_globals = &shared_globals;
+  __libc_init_shared_globals(&shared_globals);
+
   __libc_init_globals(args);
 
   __libc_init_AT_SECURE(args);
@@ -112,12 +120,26 @@ __noreturn void __libc_init(void* raw_args,
   // The executable may have its own destructors listed in its .fini_array
   // so we need to ensure that these are called when the program exits
   // normally.
-  if (structors->fini_array != NULL) {
-    __cxa_atexit(__libc_fini,structors->fini_array,NULL);
+  if (structors->fini_array != nullptr) {
+    __cxa_atexit(__libc_fini,structors->fini_array,nullptr);
   }
 
   exit(slingshot(args.argc, args.argv, args.envp));
 }
+
+#if __has_feature(hwaddress_sanitizer)
+__attribute__((no_sanitize("hwaddress")))
+#endif
+__noreturn void __libc_init(void* raw_args,
+                            void (*onexit)(void) __unused,
+                            int (*slingshot)(int, char**, char**),
+                            structors_array_t const * const structors) {
+#if __has_feature(hwaddress_sanitizer)
+  __hwasan_shadow_init();
+#endif
+  __real_libc_init(raw_args, onexit, slingshot, structors);
+}
+
 
 static uint32_t g_target_sdk_version{__ANDROID_API__};
 

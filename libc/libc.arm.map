@@ -1420,6 +1420,17 @@ LIBC_P { # introduced=P
     wcstoul_l;
 } LIBC_O;
 
+LIBC_Q { # introduced=Q
+  global:
+    __res_randomid;
+    android_fdsan_close_with_tag;
+    android_fdsan_create_owner_tag;
+    android_fdsan_exchange_owner_tag;
+    android_fdsan_get_error_level;
+    android_fdsan_set_error_level;
+    timespec_get;
+} LIBC_P;
+
 LIBC_PRIVATE {
   global:
     ___Unwind_Backtrace; # arm
@@ -1635,7 +1646,7 @@ LIBC_PRIVATE {
     wait3; # arm x86 mips
     wcswcs; # arm x86 mips
     write_malloc_leak_info;
-} LIBC_P;
+} LIBC_Q;
 
 LIBC_DEPRECATED {
   global:
@@ -1650,6 +1661,7 @@ LIBC_PLATFORM {
     __system_property_area_init;
     __system_property_set_filename;
     __system_property_update;
+    android_fdsan_get_fd_table;
     android_net_res_stats_get_info_for_net;
     android_net_res_stats_aggregate;
     android_net_res_stats_get_usable_servers;
@@ -1657,4 +1669,4 @@ LIBC_PLATFORM {
     malloc_disable;
     malloc_enable;
     malloc_iterate;
-} LIBC_P;
+} LIBC_Q;

@@ -91,16 +91,16 @@ void pthread_exit(void* return_value) {
   // space (see pthread_key_delete).
   pthread_key_clean_all();
 
-  if (thread->alternate_signal_stack != NULL) {
+  if (thread->alternate_signal_stack != nullptr) {
     // Tell the kernel to stop using the alternate signal stack.
     stack_t ss;
     memset(&ss, 0, sizeof(ss));
     ss.ss_flags = SS_DISABLE;
-    sigaltstack(&ss, NULL);
+    sigaltstack(&ss, nullptr);
 
     // Free it.
     munmap(thread->alternate_signal_stack, SIGNAL_STACK_SIZE);
-    thread->alternate_signal_stack = NULL;
+    thread->alternate_signal_stack = nullptr;
   }
 
   ThreadJoinState old_state = THREAD_NOT_JOINED;
@@ -113,7 +113,7 @@ void pthread_exit(void* return_value) {
     // So we can free mapped space, which includes pthread_internal_t and thread stack.
     // First make sure that the kernel does not try to clear the tid field
     // because we'll have freed the memory before the thread actually exits.
-    __set_tid_address(NULL);
+    __set_tid_address(nullptr);
 
     // pthread_internal_t is freed below with stack, not here.
     __pthread_internal_remove(thread);
@@ -126,6 +126,7 @@ void pthread_exit(void* return_value) {
       // That's one last thing we can do before dropping to assembler.
       ScopedSignalBlocker ssb;
       __pthread_unmap_tls(thread);
+      __hwasan_thread_exit();
       _exit_with_stack_teardown(thread->attr.stack_base, thread->mmap_size);
     }
   }
@@ -133,5 +134,6 @@ void pthread_exit(void* return_value) {
   // No need to free mapped space. Either there was no space mapped, or it is left for
   // the pthread_join caller to clean up.
   __pthread_unmap_tls(thread);
+  __hwasan_thread_exit();
   __exit(0);
 }
