@@ -38,7 +38,6 @@
 #define	_SYS_CDEFS_H_
 
 #include <android/api-level.h>
-#include <android/versioning.h>
 
 #define __BIONIC__ 1
 
@@ -92,7 +91,6 @@
 #define	___STRING(x)	__STRING(x)
 #define	___CONCAT(x,y)	__CONCAT(x,y)
 
-#if defined(__STDC__) || defined(__cplusplus)
 #define	__P(protos)	protos		/* full-blown ANSI C */
 #define	__CONCAT1(x,y)	x ## y
 #define	__CONCAT(x,y)	__CONCAT1(x,y)
@@ -102,12 +100,9 @@
 #define	__inline	inline		/* convert to C++ keyword */
 #endif /* !__cplusplus */
 
-#else	/* !(__STDC__ || __cplusplus) */
-#define	__P(protos)	()		/* traditional C preprocessor */
-#define	__CONCAT(x,y)	x/**/y
-#define	__STRING(x)	"x"
+#include <android/versioning.h>
 
-#endif	/* !(__STDC__ || __cplusplus) */
+#include <android/versioning.h>
 
 #define __always_inline __attribute__((__always_inline__))
 #define __attribute_const__ __attribute__((__const__))
@@ -323,8 +318,6 @@
 #endif
 
 #define __overloadable __attribute__((overloadable))
-/* We don't use __RENAME directly because on gcc this could result in unnecessary renames. */
-#define __RENAME_CLANG(x) __RENAME(x)
 
 /* Used to tag non-static symbols that are private and never exposed by the shared library. */
 #define __LIBC_HIDDEN__ __attribute__((visibility("hidden")))

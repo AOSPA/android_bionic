@@ -109,13 +109,13 @@ int feof(FILE* __fp);
 int ferror(FILE* __fp);
 int fflush(FILE* __fp);
 int fgetc(FILE* __fp);
-char* fgets(char* __buf, int __size, FILE* __fp) __overloadable __RENAME_CLANG(fgets);
+char* fgets(char* __buf, int __size, FILE* __fp) __overloadable __RENAME(fgets);
 int fprintf(FILE* __fp , const char* __fmt, ...) __printflike(2, 3);
 int fputc(int __ch, FILE* __fp);
 int fputs(const char* __s, FILE* __fp);
-size_t fread(void* __buf, size_t __size, size_t __count, FILE* __fp) __overloadable __RENAME_CLANG(fread);
+size_t fread(void* __buf, size_t __size, size_t __count, FILE* __fp) __overloadable __RENAME(fread);
 int fscanf(FILE* __fp, const char* __fmt, ...) __scanflike(2, 3);
-size_t fwrite(const void* __buf, size_t __size, size_t __count, FILE* __fp) __overloadable __RENAME_CLANG(fwrite);
+size_t fwrite(const void* __buf, size_t __size, size_t __count, FILE* __fp) __overloadable __RENAME(fwrite);
 int getc(FILE* __fp);
 int getchar(void);
 ssize_t getdelim(char** __line_ptr, size_t* __line_length_ptr, int __delimiter, FILE* __fp) __INTRODUCED_IN(18);
@@ -157,9 +157,9 @@ char* gets(char* __buf) __attribute__((deprecated("gets is unsafe, use fgets ins
 #endif
 int sprintf(char* __s, const char* __fmt, ...)
     __printflike(2, 3) __warnattr_strict("sprintf is often misused; please use snprintf")
-    __overloadable __RENAME_CLANG(sprintf);
+    __overloadable __RENAME(sprintf);
 int vsprintf(char* __s, const char* __fmt, va_list __args)
-    __overloadable __printflike(2, 0) __RENAME_CLANG(vsprintf)
+    __overloadable __printflike(2, 0) __RENAME(vsprintf)
     __warnattr_strict("vsprintf is often misused; please use vsnprintf");
 char* tmpnam(char* __s)
     __warnattr("tempnam is unsafe, use mkstemp or tmpfile instead");
@@ -219,11 +219,11 @@ FILE* tmpfile(void);
 FILE* tmpfile64(void) __INTRODUCED_IN(24);
 
 int snprintf(char* __buf, size_t __size, const char* __fmt, ...)
-    __printflike(3, 4) __overloadable __RENAME_CLANG(snprintf);
+    __printflike(3, 4) __overloadable __RENAME(snprintf);
 int vfscanf(FILE* __fp, const char* __fmt, va_list __args) __scanflike(2, 0);
 int vscanf(const char* __fmt , va_list __args) __scanflike(1, 0);
 int vsnprintf(char* __buf, size_t __size, const char* __fmt, va_list __args)
-    __printflike(3, 0) __overloadable __RENAME_CLANG(vsnprintf);
+    __printflike(3, 0) __overloadable __RENAME(vsnprintf);
 int vsscanf(const char* __s, const char* __fmt, va_list __args) __scanflike(2, 0);
 
 #define L_ctermid 1024 /* size for ctermid() */

@@ -141,14 +141,14 @@ int chroot(const char* __path);
 int symlink(const char* __old_path, const char* __new_path);
 int symlinkat(const char* __old_path, int __new_dir_fd, const char* __new_path) __INTRODUCED_IN(21);
 ssize_t readlink(const char* __path, char* __buf, size_t __buf_size)
-    __overloadable __RENAME_CLANG(readlink);
+    __overloadable __RENAME(readlink);
 ssize_t readlinkat(int __dir_fd, const char* __path, char* __buf, size_t __buf_size)
-    __INTRODUCED_IN(21) __overloadable __RENAME_CLANG(readlinkat);
+    __INTRODUCED_IN(21) __overloadable __RENAME(readlinkat);
 int chown(const char* __path, uid_t __owner, gid_t __group);
 int fchown(int __fd, uid_t __owner, gid_t __group);
 int fchownat(int __dir_fd, const char* __path, uid_t __owner, gid_t __group, int __flags);
 int lchown(const char* __path, uid_t __owner, gid_t __group);
-char* getcwd(char* __buf, size_t __size) __overloadable __RENAME_CLANG(getcwd);
+char* getcwd(char* __buf, size_t __size) __overloadable __RENAME(getcwd);
 
 void sync(void);
 #if defined(__USE_GNU)
@@ -158,9 +158,9 @@ int syncfs(int __fd) __INTRODUCED_IN(28);
 int close(int __fd);
 
 ssize_t read(int __fd, void* __buf, size_t __count) __overloadable
-    __RENAME_CLANG(read);
+    __RENAME(read);
 ssize_t write(int __fd, const void* __buf, size_t __count) __overloadable
-    __RENAME_CLANG(write);
+    __RENAME(write);
 
 int dup(int __old_fd);
 int dup2(int __old_fd, int __new_fd);
@@ -181,18 +181,18 @@ int ftruncate(int __fd, off_t __length) __RENAME(ftruncate64) __INTRODUCED_IN(12
 int truncate(const char* __path, off_t __length);
 off_t lseek(int __fd, off_t __offset, int __whence);
 ssize_t pread(int __fd, void* __buf, size_t __count, off_t __offset)
-    __overloadable __RENAME_CLANG(pread);
+    __overloadable __RENAME(pread);
 ssize_t pwrite(int __fd, const void* __buf, size_t __count, off_t __offset)
-    __overloadable __RENAME_CLANG(pwrite);
+    __overloadable __RENAME(pwrite);
 int ftruncate(int __fd, off_t __length);
 #endif
 
 int truncate64(const char* __path, off64_t __length) __INTRODUCED_IN(21);
 off64_t lseek64(int __fd, off64_t __offset, int __whence);
 ssize_t pread64(int __fd, void* __buf, size_t __count, off64_t __offset)
-    __INTRODUCED_IN(12) __overloadable __RENAME_CLANG(pread64);
+    __INTRODUCED_IN(12) __overloadable __RENAME(pread64);
 ssize_t pwrite64(int __fd, const void* __buf, size_t __count, off64_t __offset)
-    __INTRODUCED_IN(12) __overloadable __RENAME_CLANG(pwrite64);
+    __INTRODUCED_IN(12) __overloadable __RENAME(pwrite64);
 int ftruncate64(int __fd, off64_t __length) __INTRODUCED_IN(12);
 
 int pause(void);
