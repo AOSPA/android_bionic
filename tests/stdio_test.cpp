@@ -2356,6 +2356,52 @@ TEST(STDIO_TEST, sprintf_30445072) {
   ASSERT_EQ(buf, "hello");
 }
 
+TEST(STDIO_TEST, printf_m) {
+  char buf[BUFSIZ];
+  errno = 0;
+  snprintf(buf, sizeof(buf), "<%m>");
+  ASSERT_STREQ("<Success>", buf);
+  errno = -1;
+  snprintf(buf, sizeof(buf), "<%m>");
+  ASSERT_STREQ("<Unknown error -1>", buf);
+  errno = EINVAL;
+  snprintf(buf, sizeof(buf), "<%m>");
+  ASSERT_STREQ("<Invalid argument>", buf);
+}
+
+TEST(STDIO_TEST, printf_m_does_not_clobber_strerror) {
+  char buf[BUFSIZ];
+  const char* m = strerror(-1);
+  ASSERT_STREQ("Unknown error -1", m);
+  errno = -2;
+  snprintf(buf, sizeof(buf), "<%m>");
+  ASSERT_STREQ("<Unknown error -2>", buf);
+  ASSERT_STREQ("Unknown error -1", m);
+}
+
+TEST(STDIO_TEST, wprintf_m) {
+  wchar_t buf[BUFSIZ];
+  errno = 0;
+  swprintf(buf, sizeof(buf), L"<%m>");
+  ASSERT_EQ(std::wstring(L"<Success>"), buf);
+  errno = -1;
+  swprintf(buf, sizeof(buf), L"<%m>");
+  ASSERT_EQ(std::wstring(L"<Unknown error -1>"), buf);
+  errno = EINVAL;
+  swprintf(buf, sizeof(buf), L"<%m>");
+  ASSERT_EQ(std::wstring(L"<Invalid argument>"), buf);
+}
+
+TEST(STDIO_TEST, wprintf_m_does_not_clobber_strerror) {
+  wchar_t buf[BUFSIZ];
+  const char* m = strerror(-1);
+  ASSERT_STREQ("Unknown error -1", m);
+  errno = -2;
+  swprintf(buf, sizeof(buf), L"<%m>");
+  ASSERT_EQ(std::wstring(L"<Unknown error -2>"), buf);
+  ASSERT_STREQ("Unknown error -1", m);
+}
+
 TEST(STDIO_TEST, fopen_append_mode_and_ftell) {
   TemporaryFile tf;
   SetFileTo(tf.filename, "0123456789");
@@ -2505,4 +2551,20 @@ TEST(STDIO_TEST, fseek_overflow_32bit) {
   ASSERT_EQ(0x2'0000'0000, ftello64(fp));
 
   fclose(fp);
+}
+
+TEST(STDIO_TEST, dev_std_files) {
+  // POSIX only mentions /dev/stdout, but we should have all three (http://b/31824379).
+  char path[PATH_MAX];
+  ssize_t length = readlink("/dev/stdin", path, sizeof(path));
+  ASSERT_LT(0, length);
+  ASSERT_EQ("/proc/self/fd/0", std::string(path, length));
+
+  length = readlink("/dev/stdout", path, sizeof(path));
+  ASSERT_LT(0, length);
+  ASSERT_EQ("/proc/self/fd/1", std::string(path, length));
+
+  length = readlink("/dev/stderr", path, sizeof(path));
+  ASSERT_LT(0, length);
+  ASSERT_EQ("/proc/self/fd/2", std::string(path, length));
 }

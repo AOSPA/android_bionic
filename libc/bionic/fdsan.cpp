@@ -43,6 +43,7 @@
 #include <sys/system_properties.h>
 
 #include "private/bionic_globals.h"
+#include "private/bionic_inline_raise.h"
 #include "pthread_internal.h"
 
 extern "C" int ___close(int fd);
@@ -176,12 +177,20 @@ __printflike(1, 0) static void fdsan_error(const char* fmt, ...) {
     return;
   }
 
+  struct {
+    size_t size;
+    char buf[512];
+  } abort_message;
+
   va_list va;
   va_start(va, fmt);
   if (error_level == ANDROID_FDSAN_ERROR_LEVEL_FATAL) {
     async_safe_fatal_va_list("fdsan", fmt, va);
   } else {
     async_safe_format_log_va_list(ANDROID_LOG_ERROR, "fdsan", fmt, va);
+    size_t len =
+        async_safe_format_buffer_va_list(abort_message.buf, sizeof(abort_message.buf), fmt, va);
+    abort_message.size = len + sizeof(size_t);
   }
   va_end(va);
 
@@ -192,10 +201,11 @@ __printflike(1, 0) static void fdsan_error(const char* fmt, ...) {
       __BIONIC_FALLTHROUGH;
     case ANDROID_FDSAN_ERROR_LEVEL_WARN_ALWAYS:
       // DEBUGGER_SIGNAL
-      raise(__SIGRTMIN + 3);
+      inline_raise(__SIGRTMIN + 3, &abort_message);
       break;
 
     case ANDROID_FDSAN_ERROR_LEVEL_FATAL:
+      inline_raise(SIGABRT);
       abort();
 
     case ANDROID_FDSAN_ERROR_LEVEL_DISABLED:
@@ -218,7 +228,7 @@ uint64_t android_fdsan_create_owner_tag(android_fdsan_owner_type type, uint64_t 
   return result;
 }
 
-static const char* __tag_to_type(uint64_t tag) {
+const char* android_fdsan_get_tag_type(uint64_t tag) {
   uint64_t type = tag >> 56;
   switch (type) {
     case ANDROID_FDSAN_OWNER_TYPE_FILE:
@@ -235,6 +245,10 @@ static const char* __tag_to_type(uint64_t tag) {
       return "RandomAccessFile";
     case ANDROID_FDSAN_OWNER_TYPE_PARCELFILEDESCRIPTOR:
       return "ParcelFileDescriptor";
+    case ANDROID_FDSAN_OWNER_TYPE_SQLITE:
+      return "sqlite";
+    case ANDROID_FDSAN_OWNER_TYPE_ART_FDFILE:
+      return "ART FdFile";
 
     case ANDROID_FDSAN_OWNER_TYPE_GENERIC_00:
     default:
@@ -251,7 +265,7 @@ static const char* __tag_to_type(uint64_t tag) {
   }
 }
 
-static uint64_t __tag_to_owner(uint64_t tag) {
+uint64_t android_fdsan_get_tag_value(uint64_t tag) {
   // Lop off the most significant byte and sign extend.
   return static_cast<uint64_t>(static_cast<int64_t>(tag << 8) >> 8);
 }
@@ -264,10 +278,10 @@ int android_fdsan_close_with_tag(int fd, uint64_t expected_tag) {
 
   uint64_t tag = expected_tag;
   if (!atomic_compare_exchange_strong(&fde->close_tag, &tag, 0)) {
-    const char* expected_type = __tag_to_type(expected_tag);
-    uint64_t expected_owner = __tag_to_owner(expected_tag);
-    const char* actual_type = __tag_to_type(tag);
-    uint64_t actual_owner = __tag_to_owner(tag);
+    const char* expected_type = android_fdsan_get_tag_type(expected_tag);
+    uint64_t expected_owner = android_fdsan_get_tag_value(expected_tag);
+    const char* actual_type = android_fdsan_get_tag_type(tag);
+    uint64_t actual_owner = android_fdsan_get_tag_value(tag);
     if (expected_tag && tag) {
       fdsan_error(
           "attempted to close file descriptor %d, "
@@ -297,6 +311,14 @@ int android_fdsan_close_with_tag(int fd, uint64_t expected_tag) {
   return rc;
 }
 
+uint64_t android_fdsan_get_owner_tag(int fd) {
+  FdEntry* fde = GetFdEntry(fd);
+  if (!fde) {
+    return 0;
+  }
+  return fde->close_tag;
+}
+
 void android_fdsan_exchange_owner_tag(int fd, uint64_t expected_tag, uint64_t new_tag) {
   FdEntry* fde = GetFdEntry(fd);
   if (!fde) {
@@ -309,18 +331,18 @@ void android_fdsan_exchange_owner_tag(int fd, uint64_t expected_tag, uint64_t ne
       fdsan_error(
           "failed to exchange ownership of file descriptor: fd %d is "
           "owned by %s 0x%" PRIx64 ", was expected to be owned by %s 0x%" PRIx64,
-          fd, __tag_to_type(tag), __tag_to_owner(tag), __tag_to_type(expected_tag),
-          __tag_to_owner(expected_tag));
+          fd, android_fdsan_get_tag_type(tag), android_fdsan_get_tag_value(tag),
+          android_fdsan_get_tag_type(expected_tag), android_fdsan_get_tag_value(expected_tag));
     } else if (expected_tag && !tag) {
       fdsan_error(
           "failed to exchange ownership of file descriptor: fd %d is "
           "unowned, was expected to be owned by %s 0x%" PRIx64,
-          fd, __tag_to_type(expected_tag), __tag_to_owner(expected_tag));
+          fd, android_fdsan_get_tag_type(expected_tag), android_fdsan_get_tag_value(expected_tag));
     } else if (!expected_tag && tag) {
       fdsan_error(
           "failed to exchange ownership of file descriptor: fd %d is "
           "owned by %s 0x%" PRIx64 ", was expected to be unowned",
-          fd, __tag_to_type(tag), __tag_to_owner(tag));
+          fd, android_fdsan_get_tag_type(tag), android_fdsan_get_tag_value(tag));
     } else if (!expected_tag && !tag) {
       // This should never happen: our CAS failed, but expected == actual?
       async_safe_fatal(
