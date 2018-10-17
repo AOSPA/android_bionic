@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2012 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-#include <private/bionic_asm.h>
+#pragma once
 
-ENTRY(ceil)
-  frintP d0, d0
-  ret
-END(ceil)
-
-ENTRY(ceilf)
-  frintP s0, s0
-  ret
-END(ceilf)
+// Access to argc/argv/envp
+int GetArgc();
+char** GetArgv();
+char** GetEnvp();

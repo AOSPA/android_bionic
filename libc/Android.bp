@@ -189,7 +189,6 @@ cc_library_static {
 
         "upstream-netbsd/lib/libc/isc/ev_streams.c",
         "upstream-netbsd/lib/libc/isc/ev_timers.c",
-        "upstream-netbsd/lib/libc/resolv/mtctxres.c",
     ],
 
     cflags: [
@@ -480,7 +479,6 @@ cc_library_static {
         "upstream-openbsd/lib/libc/stdlib/labs.c",
         "upstream-openbsd/lib/libc/stdlib/llabs.c",
         "upstream-openbsd/lib/libc/stdlib/lsearch.c",
-        "upstream-openbsd/lib/libc/stdlib/reallocarray.c",
         "upstream-openbsd/lib/libc/stdlib/remque.c",
         "upstream-openbsd/lib/libc/stdlib/setenv.c",
         "upstream-openbsd/lib/libc/stdlib/tfind.c",
@@ -1901,6 +1899,7 @@ cc_defaults {
             cflags: ["-fPIC"],
         },
     },
+    stl: "none",
 }
 
 // crt obj files
