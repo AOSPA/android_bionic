@@ -1870,6 +1870,7 @@ cc_library {
 
 cc_defaults {
     name: "crt_defaults",
+    sdclang: true,
     defaults: ["linux_bionic_supported"],
     vendor_available: true,
     recovery_available: true,
