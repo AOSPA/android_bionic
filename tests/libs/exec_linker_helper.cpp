@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,19 +26,18 @@
  * SUCH DAMAGE.
  */
 
-#include <errno.h>
-#include <unistd.h>
+#include <stdio.h>
 
-#include "private/ErrnoRestorer.h"
-#include "pthread_internal.h"
+extern "C" void _start();
+const char* helper_func();
 
-int pthread_kill(pthread_t t, int sig) {
-  ErrnoRestorer errno_restorer;
+__attribute__((constructor))
+static void ctor(int argc, char* argv[]) {
+  printf("ctor: argc=%d argv[0]=%s\n", argc, argv[0]);
+}
 
-  pid_t tid = pthread_gettid_np(t);
-
-  // tid gets reset to 0 on thread exit by CLONE_CHILD_CLEARTID.
-  if (tid == 0 || tid == -1) return ESRCH;
-
-  return (tgkill(getpid(), tid, sig) == -1) ? errno : 0;
+int main(int argc, char* argv[]) {
+  printf("main: argc=%d argv[0]=%s\n", argc, argv[0]);
+  printf("%s\n", helper_func());
+  return 0;
 }

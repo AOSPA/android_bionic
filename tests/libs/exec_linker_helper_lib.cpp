@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,19 +26,9 @@
  * SUCH DAMAGE.
  */
 
-#include <errno.h>
-#include <unistd.h>
+// Verify that the linker can find exec_linker_helper_lib.so using the
+// executable's $ORIGIN runpath, even when the executable is inside a zip file.
 
-#include "private/ErrnoRestorer.h"
-#include "pthread_internal.h"
-
-int pthread_kill(pthread_t t, int sig) {
-  ErrnoRestorer errno_restorer;
-
-  pid_t tid = pthread_gettid_np(t);
-
-  // tid gets reset to 0 on thread exit by CLONE_CHILD_CLEARTID.
-  if (tid == 0 || tid == -1) return ESRCH;
-
-  return (tgkill(getpid(), tid, sig) == -1) ? errno : 0;
+const char* helper_func() {
+  return "helper_func called";
 }
