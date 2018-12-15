@@ -31,7 +31,7 @@
 #include <fstream>
 
 #include "gtest_globals.h"
-#include "TemporaryFile.h"
+#include <android-base/file.h>
 #include "utils.h"
 
 extern "C" int main_global_default_serial() {
@@ -136,6 +136,7 @@ TEST(dl, exec_linker_load_self) {
 
 TEST(dl, preinit_system_calls) {
 #if defined(__BIONIC__)
+  SKIP_WITH_HWASAN; // hwasan not initialized in preinit_array
   std::string helper = GetTestlibRoot() +
       "/preinit_syscall_test_helper/preinit_syscall_test_helper";
   chmod(helper.c_str(), 0755); // TODO: "x" lost in CTS, b/34945607
@@ -153,6 +154,9 @@ TEST(dl, xfail_preinit_getauxval) {
   ExecTestHelper eth;
   eth.SetArgs({ helper.c_str(), nullptr });
   eth.Run([&]() { execve(helper.c_str(), eth.GetArgs(), eth.GetEnv()); }, 0, nullptr);
+#else
+  // Force a failure when not compiled for bionic so the test is considered a pass.
+  ASSERT_TRUE(false);
 #endif
 }
 
@@ -235,6 +239,7 @@ static bool is_debuggable_build() {
 // whose search paths include the 'ns2/' subdir.
 TEST(dl, exec_with_ld_config_file) {
 #if defined(__BIONIC__)
+  SKIP_WITH_HWASAN; // libclang_rt.hwasan is not found with custom ld config
   if (!is_debuggable_build()) {
     // LD_CONFIG_FILE is not supported on user build
     return;
@@ -242,8 +247,8 @@ TEST(dl, exec_with_ld_config_file) {
   std::string helper = GetTestlibRoot() +
       "/ld_config_test_helper/ld_config_test_helper";
   TemporaryFile config_file;
-  create_ld_config_file(config_file.filename);
-  std::string env = std::string("LD_CONFIG_FILE=") + config_file.filename;
+  create_ld_config_file(config_file.path);
+  std::string env = std::string("LD_CONFIG_FILE=") + config_file.path;
   chmod(helper.c_str(), 0755);
   ExecTestHelper eth;
   eth.SetArgs({ helper.c_str(), nullptr });
@@ -257,6 +262,7 @@ TEST(dl, exec_with_ld_config_file) {
 // additional namespaces other than the default namespace.
 TEST(dl, exec_with_ld_config_file_with_ld_preload) {
 #if defined(__BIONIC__)
+  SKIP_WITH_HWASAN; // libclang_rt.hwasan is not found with custom ld config
   if (!is_debuggable_build()) {
     // LD_CONFIG_FILE is not supported on user build
     return;
@@ -264,8 +270,8 @@ TEST(dl, exec_with_ld_config_file_with_ld_preload) {
   std::string helper = GetTestlibRoot() +
       "/ld_config_test_helper/ld_config_test_helper";
   TemporaryFile config_file;
-  create_ld_config_file(config_file.filename);
-  std::string env = std::string("LD_CONFIG_FILE=") + config_file.filename;
+  create_ld_config_file(config_file.path);
+  std::string env = std::string("LD_CONFIG_FILE=") + config_file.path;
   std::string env2 = std::string("LD_PRELOAD=") + GetTestlibRoot() + "/ld_config_test_helper_lib3.so";
   chmod(helper.c_str(), 0755);
   ExecTestHelper eth;
@@ -294,8 +300,8 @@ TEST(dl, disable_ld_config_file) {
   std::string helper = GetTestlibRoot() +
       "/ld_config_test_helper/ld_config_test_helper";
   TemporaryFile config_file;
-  create_ld_config_file(config_file.filename);
-  std::string env = std::string("LD_CONFIG_FILE=") + config_file.filename;
+  create_ld_config_file(config_file.path);
+  std::string env = std::string("LD_CONFIG_FILE=") + config_file.path;
   chmod(helper.c_str(), 0755);
   ExecTestHelper eth;
   eth.SetArgs({ helper.c_str(), nullptr });

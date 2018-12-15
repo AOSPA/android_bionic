@@ -1086,6 +1086,7 @@ static int open_library(android_namespace_t* ns,
     fd = open_library_on_paths(zip_archive_cache, name, file_offset, needed_by->get_dt_runpath(), realpath);
     // Check if the library is accessible
     if (fd != -1 && !ns->is_accessible(*realpath)) {
+      close(fd);
       fd = -1;
     }
   }
@@ -1317,6 +1318,15 @@ static bool load_library(android_namespace_t* ns,
       si->set_soname(elf_reader.get_string(d->d_un.d_val));
     }
   }
+
+#if !defined(__ANDROID__)
+  // Bionic on the host currently uses some Android prebuilts, which don't set
+  // DT_RUNPATH with any relative paths, so they can't find their dependencies.
+  // b/118058804
+  if (si->get_dt_runpath().empty()) {
+    si->set_dt_runpath("$ORIGIN/../lib64:$ORIGIN/lib64");
+  }
+#endif
 
   for_each_dt_needed(task->get_elf_reader(), [&](const char* name) {
     load_tasks->push_back(LoadTask::create(name, si, ns, task->get_readers_map()));
@@ -2061,13 +2071,6 @@ void* do_dlopen(const char* name, int flags,
         (extinfo->flags & ANDROID_DLEXT_USE_LIBRARY_FD_OFFSET) != 0) {
       DL_ERR("invalid extended flag combination (ANDROID_DLEXT_USE_LIBRARY_FD_OFFSET without "
           "ANDROID_DLEXT_USE_LIBRARY_FD): 0x%" PRIx64, extinfo->flags);
-      return nullptr;
-    }
-
-    if ((extinfo->flags & ANDROID_DLEXT_LOAD_AT_FIXED_ADDRESS) != 0 &&
-        (extinfo->flags & (ANDROID_DLEXT_RESERVED_ADDRESS | ANDROID_DLEXT_RESERVED_ADDRESS_HINT)) != 0) {
-      DL_ERR("invalid extended flag combination: ANDROID_DLEXT_LOAD_AT_FIXED_ADDRESS is not "
-             "compatible with ANDROID_DLEXT_RESERVED_ADDRESS/ANDROID_DLEXT_RESERVED_ADDRESS_HINT");
       return nullptr;
     }
 
@@ -3702,6 +3705,15 @@ static std::vector<android_namespace_t*> init_default_namespace_no_config(bool i
   return namespaces;
 }
 
+// return /apex/<name>/etc/ld.config.txt from /apex/<name>/bin/<exec>
+static std::string get_ld_config_file_apex_path(const char* executable_path) {
+  std::vector<std::string> paths = android::base::Split(executable_path, "/");
+  if (paths.size() == 5 && paths[1] == "apex" && paths[3] == "bin") {
+    return std::string("/apex/") + paths[2] + "/etc/ld.config.txt";
+  }
+  return "";
+}
+
 static std::string get_ld_config_file_vndk_path() {
   if (android::base::GetBoolProperty("ro.vndk.lite", false)) {
     return kLdConfigVndkLiteFilePath;
@@ -3716,7 +3728,7 @@ static std::string get_ld_config_file_vndk_path() {
   return ld_config_file_vndk;
 }
 
-static std::string get_ld_config_file_path() {
+static std::string get_ld_config_file_path(const char* executable_path) {
 #ifdef USE_LD_CONFIG_FILE
   // This is a debugging/testing only feature. Must not be available on
   // production builds.
@@ -3726,13 +3738,23 @@ static std::string get_ld_config_file_path() {
   }
 #endif
 
-  if (file_exists(kLdConfigArchFilePath)) {
-    return kLdConfigArchFilePath;
+  std::string path = get_ld_config_file_apex_path(executable_path);
+  if (!path.empty()) {
+    if (file_exists(path.c_str())) {
+      return path;
+    }
+    DL_WARN("Warning: couldn't read config file \"%s\" for \"%s\"",
+            path.c_str(), executable_path);
   }
 
-  std::string ld_config_file_vndk = get_ld_config_file_vndk_path();
-  if (file_exists(ld_config_file_vndk.c_str())) {
-    return ld_config_file_vndk;
+  path = kLdConfigArchFilePath;
+  if (file_exists(path.c_str())) {
+    return path;
+  }
+
+  path = get_ld_config_file_vndk_path();
+  if (file_exists(path.c_str())) {
+    return path;
   }
 
   return kLdConfigFilePath;
@@ -3755,7 +3777,7 @@ std::vector<android_namespace_t*> init_default_namespaces(const char* executable
 
   std::string error_msg;
 
-  std::string ld_config_file_path = get_ld_config_file_path();
+  std::string ld_config_file_path = get_ld_config_file_path(executable_path);
 
   if (!Config::read_binary_config(ld_config_file_path.c_str(),
                                   executable_path,
