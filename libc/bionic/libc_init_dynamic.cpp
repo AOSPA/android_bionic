@@ -51,6 +51,7 @@
 #include <elf.h>
 #include "libc_init_common.h"
 
+#include "private/bionic_auxv.h"
 #include "private/bionic_globals.h"
 #include "private/bionic_macros.h"
 #include "private/bionic_ssp.h"
@@ -78,10 +79,13 @@ __LIBC_HIDDEN__ void* __libc_sysinfo = reinterpret_cast<void*>(__libc_int0x80);
 // protector.
 __attribute__((noinline))
 static void __libc_preinit_impl(KernelArgumentBlock& args) {
-  __libc_shared_globals = args.shared_globals;
+  __libc_auxv = args.auxv;
+#if defined(__i386__)
+  __libc_init_sysinfo(args);
+#endif
 
   __libc_init_globals(args);
-  __libc_init_common(args);
+  __libc_init_common();
 
   // Hooks for various libraries to let them know that we're starting up.
   __libc_globals.mutate(__libc_init_malloc);
@@ -133,7 +137,13 @@ __noreturn void __libc_init(void* raw_args,
     __cxa_atexit(__libc_fini,structors->fini_array,nullptr);
   }
 
-  exit(slingshot(args.argc - __libc_shared_globals->initial_linker_arg_count,
-                 args.argv + __libc_shared_globals->initial_linker_arg_count,
+  exit(slingshot(args.argc - __libc_shared_globals()->initial_linker_arg_count,
+                 args.argv + __libc_shared_globals()->initial_linker_arg_count,
                  args.envp));
+}
+
+extern "C" libc_shared_globals* __loader_shared_globals();
+
+__LIBC_HIDDEN__ libc_shared_globals* __libc_shared_globals() {
+  return __loader_shared_globals();
 }

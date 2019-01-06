@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,7 @@
  * SUCH DAMAGE.
  */
 
-#include <signal.h>
+#define MEMMOVE memmove_a7
+#define MEMCPY __memcpy_a7
 
-const char* const sys_siglist[NSIG] = {
-#define __BIONIC_SIGDEF(signal_number, signal_description) [ signal_number ] = signal_description,
-#include "private/bionic_sigdefs.h"
-};
+#include <arch-arm/denver/bionic/memmove.S>

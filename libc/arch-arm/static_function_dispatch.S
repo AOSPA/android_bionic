@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,33 +26,22 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include <private/bionic_asm.h>
 
-#include <string>
-#include <vector>
+#define FUNCTION_DELEGATE(name, impl) \
+ENTRY(name); \
+    b impl; \
+END(name)
 
-extern const char* const kZipFileSeparator;
-
-void format_string(std::string* str, const std::vector<std::pair<std::string, std::string>>& params);
-
-bool file_is_in_dir(const std::string& file, const std::string& dir);
-bool file_is_under_dir(const std::string& file, const std::string& dir);
-bool normalize_path(const char* path, std::string* normalized_path);
-bool parse_zip_path(const char* input_path, std::string* zip_path, std::string* entry_path);
-
-// For every path element this function checks of it exists, and is a directory,
-// and normalizes it:
-// 1. For regular path it converts it to realpath()
-// 2. For path in a zip file it uses realpath on the zipfile
-//    normalizes entry name by calling normalize_path function.
-void resolve_paths(std::vector<std::string>& paths,
-                   std::vector<std::string>* resolved_paths);
-
-void split_path(const char* path, const char* delimiters, std::vector<std::string>* paths);
-
-std::string dirname(const char* path);
-
-off64_t page_start(off64_t offset);
-size_t page_offset(off64_t offset);
-bool safe_add(off64_t* out, off64_t a, size_t b);
-bool is_first_stage_init();
+FUNCTION_DELEGATE(memmove, memmove_generic)
+FUNCTION_DELEGATE(memcpy, memmove_generic)
+FUNCTION_DELEGATE(memset, memset_generic)
+FUNCTION_DELEGATE(__memset_chk, __memset_chk_generic)
+FUNCTION_DELEGATE(strcpy, strcpy_generic)
+FUNCTION_DELEGATE(__strcpy_chk, __strcpy_chk_generic)
+// TODO(b/121271714): Restore arm libc function delegation
+//FUNCTION_DELEGATE(stpcpy, stpcpy_generic)
+//FUNCTION_DELEGATE(strcat, strcat_generic)
+FUNCTION_DELEGATE(__strcat_chk, __strcat_chk_generic)
+FUNCTION_DELEGATE(strcmp, strcmp_generic)
+FUNCTION_DELEGATE(strlen, strlen_generic)

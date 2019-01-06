@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,5 @@
  * SUCH DAMAGE.
  */
 
-#include <signal.h>
-
-const char* const sys_signame[NSIG] = {
-#define __BIONIC_SIGDEF(signal_number, unused) [ signal_number ] = #signal_number + 3,
-#include "private/bionic_sigdefs.h"
-};
+#define stpcpy stpcpy_generic
+#include <upstream-openbsd/lib/libc/string/stpcpy.c>
