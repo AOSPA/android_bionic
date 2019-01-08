@@ -15,7 +15,7 @@ cc_library_static {
     // We need to access Bionic private headers in the linker.
     include_dirs: ["bionic/libc"],
 
-    static_libs: ["libasync_safe"],
+    static_libs: ["libasync_safe", "libbase"],
 }
 
 // This is used for bionic on (host) Linux to bootstrap our linker embedded into
@@ -166,10 +166,6 @@ cc_defaults {
         "-Wl,--exclude-libs,ALL",
         "-Wl,-soname,ld-android.so",
     ],
-
-    // lld bug: https://bugs.llvm.org/show_bug.cgi?id=36295
-    // error: symbol __aeabi_*@@LIBC_N has undefined version LIBC_N
-    use_clang_lld: false,
 
     cflags: [
         "-fno-stack-protector",
