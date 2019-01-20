@@ -26,7 +26,12 @@
  * SUCH DAMAGE.
  */
 
-#define MEMMOVE memmove_a7
-#define MEMCPY __memcpy_a7
+#include <private/bionic_asm.h>
 
-#include <arch-arm/denver/bionic/memmove.S>
+#define FUNCTION_DELEGATE(name, impl) \
+ENTRY(name); \
+    b impl; \
+END(name)
+
+FUNCTION_DELEGATE(strcmp, strcmp_internal)
+FUNCTION_DELEGATE(strlen, strlen_internal)
