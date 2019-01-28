@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,10 +26,22 @@
  * SUCH DAMAGE.
  */
 
-// Prototype: void *memcpy (void *dst, const void *src, size_t count).
-
 #include <private/bionic_asm.h>
 
-ENTRY(__memcpy)
-  #include "memcpy_base.S"
-END(__memcpy)
+#define FUNCTION_DELEGATE(name, impl) \
+ENTRY(name); \
+    b impl; \
+END(name)
+
+FUNCTION_DELEGATE(memmove, memmove_generic)
+FUNCTION_DELEGATE(memcpy, memmove_generic)
+FUNCTION_DELEGATE(memset, memset_generic)
+FUNCTION_DELEGATE(__memset_chk, __memset_chk_generic)
+FUNCTION_DELEGATE(strcpy, strcpy_generic)
+FUNCTION_DELEGATE(__strcpy_chk, __strcpy_chk_generic)
+// TODO(b/121271714): Restore arm libc function delegation
+//FUNCTION_DELEGATE(stpcpy, stpcpy_generic)
+//FUNCTION_DELEGATE(strcat, strcat_generic)
+FUNCTION_DELEGATE(__strcat_chk, __strcat_chk_generic)
+FUNCTION_DELEGATE(strcmp, strcmp_generic)
+FUNCTION_DELEGATE(strlen, strlen_generic)

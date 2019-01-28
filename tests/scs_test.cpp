@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef PRIVATE_NETD_CLIENT_DISPATCH_H
-#define PRIVATE_NETD_CLIENT_DISPATCH_H
+#if __has_feature(shadow_call_stack)
 
-#include <sys/cdefs.h>
-#include <sys/socket.h>
+#include <gtest/gtest.h>
 
-__BEGIN_DECLS
+#include "private/bionic_constants.h"
 
-struct NetdClientDispatch {
-    int (*accept4)(int, struct sockaddr*, socklen_t*, int);
-    int (*connect)(int, const struct sockaddr*, socklen_t);
-    int (*socket)(int, int, int);
-    unsigned (*netIdForResolv)(unsigned);
-    int (*dnsOpenProxy)();
-};
+int recurse2(int count);
 
-extern __LIBC_HIDDEN__ struct NetdClientDispatch __netdClientDispatch;
+__attribute__((weak, noinline)) int recurse1(int count) {
+  if (count != 0) return recurse2(count - 1) + 1;
+  return 0;
+}
 
-__END_DECLS
+__attribute__((weak, noinline)) int recurse2(int count) {
+  if (count != 0) return recurse1(count - 1) + 1;
+  return 0;
+}
 
-#endif  // PRIVATE_NETD_CLIENT_DISPATCH_H
+TEST(scs_test, stack_overflow) {
+  ASSERT_EXIT(recurse1(SCS_SIZE), testing::KilledBySignal(SIGSEGV), "");
+}
+
+#endif

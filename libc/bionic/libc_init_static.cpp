@@ -95,19 +95,14 @@ __noreturn static void __real_libc_init(void *raw_args,
                                         structors_array_t const * const structors) {
   BIONIC_STOP_UNWIND;
 
+  // Initialize TLS early so system calls and errno work.
   KernelArgumentBlock args(raw_args);
-
-  // Initializing the globals requires TLS to be available for errno.
-  __libc_init_main_thread(args);
-
-  static libc_shared_globals shared_globals;
-  __libc_shared_globals = &shared_globals;
-  __libc_init_shared_globals(&shared_globals);
-
-  __libc_init_globals(args);
-
-  __libc_init_AT_SECURE(args);
-  __libc_init_common(args);
+  __libc_init_main_thread_early(args);
+  __libc_init_main_thread_late();
+  __libc_init_globals();
+  __libc_shared_globals()->init_progname = args.argv[0];
+  __libc_init_AT_SECURE(args.envp);
+  __libc_init_common();
 
   apply_gnu_relro();
 
@@ -154,4 +149,9 @@ extern "C" int android_get_application_target_sdk_version() {
 
 extern "C" void android_set_application_target_sdk_version(int target) {
   g_target_sdk_version = target;
+}
+
+__LIBC_HIDDEN__ libc_shared_globals* __libc_shared_globals() {
+  static libc_shared_globals globals;
+  return &globals;
 }

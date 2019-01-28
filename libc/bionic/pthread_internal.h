@@ -139,10 +139,13 @@ class pthread_internal_t {
    * The dynamic linker implements dlerror(3), which makes it hard for us to implement this
    * per-thread buffer by simply using malloc(3) and free(3).
    */
+  char* current_dlerror;
 #define __BIONIC_DLERROR_BUFFER_SIZE 512
   char dlerror_buffer[__BIONIC_DLERROR_BUFFER_SIZE];
 
   bionic_tls* bionic_tls;
+
+  int errno_value;
 
   // The thread pointer (__get_tls()) points at this field. This field must come last so that
   // an executable's TLS segment can be allocated at a fixed offset after the thread pointer.
@@ -152,10 +155,11 @@ class pthread_internal_t {
   pthread_key_data_t key_data[BIONIC_PTHREAD_KEY_COUNT];
 };
 
-__LIBC_HIDDEN__ int __init_thread(pthread_internal_t* thread);
-__LIBC_HIDDEN__ bool __init_tls(pthread_internal_t* thread);
-__LIBC_HIDDEN__ void __init_thread_stack_guard(pthread_internal_t* thread);
+__LIBC_HIDDEN__ void __init_tls(pthread_internal_t* thread);
+__LIBC_HIDDEN__ void __init_tls_stack_guard(pthread_internal_t* thread);
+__LIBC_HIDDEN__ bionic_tls* __allocate_bionic_tls();
 __LIBC_HIDDEN__ void __init_additional_stacks(pthread_internal_t*);
+__LIBC_HIDDEN__ int __init_thread(pthread_internal_t* thread);
 
 __LIBC_HIDDEN__ pthread_t           __pthread_internal_add(pthread_internal_t* thread);
 __LIBC_HIDDEN__ pthread_internal_t* __pthread_internal_find(pthread_t pthread_id);
@@ -208,9 +212,6 @@ __LIBC_HIDDEN__ void pthread_key_clean_all(void);
 
 // Leave room for a guard page in the internally created signal stacks.
 #define SIGNAL_STACK_SIZE (SIGNAL_STACK_SIZE_WITHOUT_GUARD + PTHREAD_GUARD_SIZE)
-
-// Size of the shadow call stack.
-#define SCS_SIZE (8 * 1024)
 
 // Needed by fork.
 __LIBC_HIDDEN__ extern void __bionic_atfork_run_prepare();

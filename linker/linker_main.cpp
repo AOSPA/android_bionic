@@ -28,6 +28,9 @@
 
 #include "linker_main.h"
 
+#include <link.h>
+#include <sys/auxv.h>
+
 #include "linker_debug.h"
 #include "linker_cfi.h"
 #include "linker_gdb_support.h"
@@ -35,7 +38,6 @@
 #include "linker_phdr.h"
 #include "linker_utils.h"
 
-#include "private/bionic_auxv.h"
 #include "private/bionic_globals.h"
 #include "private/bionic_tls.h"
 #include "private/KernelArgumentBlock.h"
@@ -48,11 +50,9 @@
 #endif
 
 #include <async_safe/log.h>
+#include <bionic/libc_init_common.h>
 
 #include <vector>
-
-extern void __libc_init_globals(KernelArgumentBlock&);
-extern void __libc_init_AT_SECURE(KernelArgumentBlock&);
 
 __LIBC_HIDDEN__ extern "C" void _start();
 
@@ -116,7 +116,6 @@ soinfo* solist_get_vdso() {
 }
 
 int g_ld_debug_verbosity;
-abort_msg_t* g_abort_message = nullptr; // For debuggerd.
 
 static std::vector<std::string> g_ld_preload_names;
 
@@ -149,8 +148,8 @@ static void parse_LD_PRELOAD(const char* path) {
 // An empty list of soinfos
 static soinfo_list_t g_empty_list;
 
-static void add_vdso(KernelArgumentBlock& args) {
-  ElfW(Ehdr)* ehdr_vdso = reinterpret_cast<ElfW(Ehdr)*>(args.getauxval(AT_SYSINFO_EHDR));
+static void add_vdso() {
+  ElfW(Ehdr)* ehdr_vdso = reinterpret_cast<ElfW(Ehdr)*>(getauxval(AT_SYSINFO_EHDR));
   if (ehdr_vdso == nullptr) {
     return;
   }
@@ -192,14 +191,22 @@ struct ExecutableInfo {
   ElfW(Addr) entry_point;
 };
 
-static ExecutableInfo get_executable_info(KernelArgumentBlock& args) {
+static ExecutableInfo get_executable_info() {
   ExecutableInfo result = {};
 
-  if (is_init()) {
-    // /proc fs is not mounted when init starts. Therefore we can't use
-    // /proc/self/exe for init.
+  if (is_first_stage_init()) {
+    // /proc fs is not mounted when first stage init starts. Therefore we can't
+    // use /proc/self/exe for init.
     stat("/init", &result.file_stat);
-    result.path = "/init";
+
+    // /init may be a symlink, so try to read it as such.
+    char path[PATH_MAX];
+    ssize_t path_len = readlink("/init", path, sizeof(path));
+    if (path_len == -1 || path_len >= static_cast<ssize_t>(sizeof(path))) {
+      result.path = "/init";
+    } else {
+      result.path = std::string(path, path_len);
+    }
   } else {
     // Stat "/proc/self/exe" instead of executable_path because
     // the executable could be unlinked by this point and it should
@@ -215,9 +222,9 @@ static ExecutableInfo get_executable_info(KernelArgumentBlock& args) {
     result.path = std::string(path, path_len);
   }
 
-  result.phdr = reinterpret_cast<const ElfW(Phdr)*>(args.getauxval(AT_PHDR));
-  result.phdr_count = args.getauxval(AT_PHNUM);
-  result.entry_point = args.getauxval(AT_ENTRY);
+  result.phdr = reinterpret_cast<const ElfW(Phdr)*>(getauxval(AT_PHDR));
+  result.phdr_count = getauxval(AT_PHNUM);
+  result.entry_point = getauxval(AT_ENTRY);
   return result;
 }
 
@@ -291,7 +298,7 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
 #endif
 
   // Sanitize the environment.
-  __libc_init_AT_SECURE(args);
+  __libc_init_AT_SECURE(args.envp);
 
   // Initialize system properties
   __system_properties_init(); // may use 'environ'
@@ -300,7 +307,7 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
 #ifdef __ANDROID__
   debuggerd_callbacks_t callbacks = {
     .get_abort_message = []() {
-      return g_abort_message;
+      return __libc_shared_globals()->abort_msg;
     },
     .post_dump = &notify_gdb_of_libraries,
   };
@@ -337,7 +344,7 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
   }
 
   const ExecutableInfo exe_info = exe_to_load ? load_executable(exe_to_load) :
-                                                get_executable_info(args);
+                                                get_executable_info();
 
   // Assign to a static variable for the sake of the debug map, which needs
   // a C-style string to last until the program exits.
@@ -368,7 +375,7 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
   insert_link_map_into_debug_map(&si->link_map_head);
   insert_link_map_into_debug_map(&solinker->link_map_head);
 
-  add_vdso(args);
+  add_vdso();
 
   ElfW(Ehdr)* elf_hdr = reinterpret_cast<ElfW(Ehdr)*>(si->base);
 
@@ -444,10 +451,6 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
   }
 
   if (!get_cfi_shadow()->InitialLinkDone(solist)) __linker_cannot_link(g_argv[0]);
-
-  // Store a pointer to the kernel argument block in a TLS slot to be
-  // picked up by the libc constructor.
-  __get_tls()[TLS_SLOT_BIONIC_PREINIT] = &args;
 
   si->call_pre_init_constructors();
   si->call_constructors();
@@ -552,22 +555,20 @@ __linker_init_post_relocation(KernelArgumentBlock& args, soinfo& linker_so);
  * function, or other GOT reference will generate a segfault.
  */
 extern "C" ElfW(Addr) __linker_init(void* raw_args) {
+  // Initialize TLS early so system calls and errno work.
   KernelArgumentBlock args(raw_args);
-
-#if defined(__i386__)
-  __libc_init_sysinfo(args);
-#endif
+  __libc_init_main_thread_early(args);
 
   // When the linker is run by itself (rather than as an interpreter for
   // another program), AT_BASE is 0.
-  ElfW(Addr) linker_addr = args.getauxval(AT_BASE);
+  ElfW(Addr) linker_addr = getauxval(AT_BASE);
   if (linker_addr == 0) {
     // Detect an attempt to run the linker on itself (e.g.
     // `linker64 /system/bin/linker64`). If the kernel loaded this instance of
     // the linker, then AT_ENTRY will refer to &_start. If it doesn't, then
     // something else must have loaded this instance of the linker. It's
     // simpler if we only allow one copy of the linker to be loaded at a time.
-    if (args.getauxval(AT_ENTRY) != reinterpret_cast<uintptr_t>(&_start)) {
+    if (getauxval(AT_ENTRY) != reinterpret_cast<uintptr_t>(&_start)) {
       // The first linker already relocated this one and set up TLS, so we don't
       // need further libc initialization.
       __linker_error("error: linker cannot load itself\n");
@@ -576,7 +577,7 @@ extern "C" ElfW(Addr) __linker_init(void* raw_args) {
     // instance, so use the phdr to find the linker's base address.
     ElfW(Addr) load_bias;
     get_elf_base_from_phdr(
-      reinterpret_cast<ElfW(Phdr)*>(args.getauxval(AT_PHDR)), args.getauxval(AT_PHNUM),
+      reinterpret_cast<ElfW(Phdr)*>(getauxval(AT_PHDR)), getauxval(AT_PHNUM),
       &linker_addr, &load_bias);
   }
 
@@ -615,21 +616,15 @@ extern "C" ElfW(Addr) __linker_init(void* raw_args) {
  */
 static ElfW(Addr) __attribute__((noinline))
 __linker_init_post_relocation(KernelArgumentBlock& args, soinfo& tmp_linker_so) {
-  // Initialize the main thread (including TLS, so system calls really work).
-  __libc_init_main_thread(args);
+  // Finish initializing the main thread.
+  __libc_init_main_thread_late();
 
   // We didn't protect the linker's RELRO pages in link_image because we
   // couldn't make system calls on x86 at that point, but we can now...
   if (!tmp_linker_so.protect_relro()) __linker_cannot_link(args.argv[0]);
 
-  // Initialize the linker/libc.so shared global inside the linker.
-  static libc_shared_globals shared_globals;
-  __libc_shared_globals = &shared_globals;
-  __libc_init_shared_globals(&shared_globals);
-  args.shared_globals = __libc_shared_globals;
-
   // Initialize the linker's static libc's globals
-  __libc_init_globals(args);
+  __libc_init_globals();
 
   // Initialize the linker's own global variables
   tmp_linker_so.call_constructors();
@@ -639,7 +634,7 @@ __linker_init_post_relocation(KernelArgumentBlock& args, soinfo& tmp_linker_so) 
   // as PT_INTERP, AT_ENTRY will refer to the loaded executable rather than the
   // linker's _start.
   const char* exe_to_load = nullptr;
-  if (args.getauxval(AT_ENTRY) == reinterpret_cast<uintptr_t>(&_start)) {
+  if (getauxval(AT_ENTRY) == reinterpret_cast<uintptr_t>(&_start)) {
     if (args.argc <= 1 || !strcmp(args.argv[1], "--help")) {
       async_safe_format_fd(STDOUT_FILENO,
          "Usage: %s program [arguments...]\n"
@@ -655,13 +650,14 @@ __linker_init_post_relocation(KernelArgumentBlock& args, soinfo& tmp_linker_so) 
       exit(0);
     }
     exe_to_load = args.argv[1];
-    __libc_shared_globals->initial_linker_arg_count = 1;
+    __libc_shared_globals()->initial_linker_arg_count = 1;
   }
 
   // store argc/argv/envp to use them for calling constructors
-  g_argc = args.argc - __libc_shared_globals->initial_linker_arg_count;
-  g_argv = args.argv + __libc_shared_globals->initial_linker_arg_count;
+  g_argc = args.argc - __libc_shared_globals()->initial_linker_arg_count;
+  g_argv = args.argv + __libc_shared_globals()->initial_linker_arg_count;
   g_envp = args.envp;
+  __libc_shared_globals()->init_progname = g_argv[0];
 
   // Initialize static variables. Note that in order to
   // get correct libdl_info we need to call constructors
@@ -670,7 +666,6 @@ __linker_init_post_relocation(KernelArgumentBlock& args, soinfo& tmp_linker_so) 
   g_default_namespace.add_soinfo(solinker);
   init_link_map_head(*solinker, kLinkerPath);
 
-  args.abort_message_ptr = &g_abort_message;
   ElfW(Addr) start_address = linker_main(args, exe_to_load);
 
   INFO("[ Jumping to _start (%p)... ]", reinterpret_cast<void*>(start_address));

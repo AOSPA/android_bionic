@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,11 +26,5 @@
  * SUCH DAMAGE.
  */
 
-#include <errno.h>
-#include <stdint.h>
-
-#include "pthread_internal.h"
-
-int*  __errno() {
-  return &__get_thread()->errno_value;
-}
+#define strcat strcat_generic
+#include <upstream-openbsd/lib/libc/string/strcat.c>

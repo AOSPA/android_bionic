@@ -40,7 +40,7 @@
 #define PREFETCH_DISTANCE_MID   (CACHE_LINE_SIZE*4)
 #define PREFETCH_DISTANCE_FAR   (CACHE_LINE_SIZE*16)
 
-ENTRY(memmove)
+ENTRY(memmove_a15)
         cmp         r2, #0
         cmpne       r0, r1
         bxeq        lr
@@ -277,6 +277,4 @@ ENTRY(memmove)
 
         pop         {r0, pc}
 
-END(memmove)
-
-ALIAS_SYMBOL(memcpy, memmove)
+END(memmove_a15)
