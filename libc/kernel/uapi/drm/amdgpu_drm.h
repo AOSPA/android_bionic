@@ -20,6 +20,7 @@
 #define __AMDGPU_DRM_H__
 #include "drm.h"
 #ifdef __cplusplus
+extern "C" {
 #endif
 #define DRM_AMDGPU_GEM_CREATE 0x00
 #define DRM_AMDGPU_GEM_MMAP 0x01
@@ -405,6 +406,7 @@ struct drm_amdgpu_cs_chunk_data {
 #define AMDGPU_INFO_FW_GFX_RLC_RESTORE_LIST_CNTL 0x0f
 #define AMDGPU_INFO_FW_GFX_RLC_RESTORE_LIST_GPM_MEM 0x10
 #define AMDGPU_INFO_FW_GFX_RLC_RESTORE_LIST_SRM_MEM 0x11
+#define AMDGPU_INFO_FW_DMCU 0x12
 #define AMDGPU_INFO_NUM_BYTES_MOVED 0x0f
 #define AMDGPU_INFO_VRAM_USAGE 0x10
 #define AMDGPU_INFO_GTT_USAGE 0x11
@@ -593,5 +595,6 @@ struct drm_amdgpu_info_vce_clock_table {
 #define AMDGPU_FAMILY_AI 141
 #define AMDGPU_FAMILY_RV 142
 #ifdef __cplusplus
+}
 #endif
 #endif
