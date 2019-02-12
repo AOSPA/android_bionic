@@ -30,15 +30,17 @@
 
 #include "private/bionic_defs.h"
 #include "private/bionic_futex.h"
+#include "private/bionic_systrace.h"
 #include "pthread_internal.h"
 
 __BIONIC_WEAK_FOR_NATIVE_BRIDGE
 int pthread_join(pthread_t t, void** return_value) {
+  ScopedTrace trace("pthread_join");
   if (t == pthread_self()) {
     return EDEADLK;
   }
 
-  pthread_internal_t* thread = __pthread_internal_find(t);
+  pthread_internal_t* thread = __pthread_internal_find(t, "pthread_join");
   if (thread == nullptr) {
     return ESRCH;
   }

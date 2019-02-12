@@ -66,6 +66,30 @@ static void call_array(void(**list)()) {
   }
 }
 
+#if defined(__aarch64__) || defined(__x86_64__)
+extern __LIBC_HIDDEN__ ElfW(Rela) __rela_iplt_start[], __rela_iplt_end[];
+
+static void call_ifunc_resolvers() {
+  typedef ElfW(Addr) (*ifunc_resolver_t)(void);
+  for (ElfW(Rela) *r = __rela_iplt_start; r != __rela_iplt_end; ++r) {
+    ElfW(Addr)* offset = reinterpret_cast<ElfW(Addr)*>(r->r_offset);
+    ElfW(Addr) resolver = r->r_addend;
+    *offset = reinterpret_cast<ifunc_resolver_t>(resolver)();
+  }
+}
+#else
+extern __LIBC_HIDDEN__ ElfW(Rel) __rel_iplt_start[], __rel_iplt_end[];
+
+static void call_ifunc_resolvers() {
+  typedef ElfW(Addr) (*ifunc_resolver_t)(void);
+  for (ElfW(Rel) *r = __rel_iplt_start; r != __rel_iplt_end; ++r) {
+    ElfW(Addr)* offset = reinterpret_cast<ElfW(Addr)*>(r->r_offset);
+    ElfW(Addr) resolver = *offset;
+    *offset = reinterpret_cast<ifunc_resolver_t>(resolver)();
+  }
+}
+#endif
+
 static void apply_gnu_relro() {
   ElfW(Phdr)* phdr_start = reinterpret_cast<ElfW(Phdr)*>(getauxval(AT_PHDR));
   unsigned long int phdr_ct = getauxval(AT_PHNUM);
@@ -92,19 +116,22 @@ static void layout_static_tls(KernelArgumentBlock& args) {
   size_t phdr_ct = getauxval(AT_PHNUM);
 
   static TlsModule mod;
+  TlsModules& modules = __libc_shared_globals()->tls_modules;
   if (__bionic_get_tls_segment(phdr_start, phdr_ct, 0, &mod.segment)) {
     if (!__bionic_check_tls_alignment(&mod.segment.alignment)) {
       async_safe_fatal("error: TLS segment alignment in \"%s\" is not a power of 2: %zu\n",
                        progname, mod.segment.alignment);
     }
     mod.static_offset = layout.reserve_exe_segment_and_tcb(&mod.segment, progname);
-    mod.first_generation = 1;
-    __libc_shared_globals()->tls_modules.generation = 1;
-    __libc_shared_globals()->tls_modules.module_count = 1;
-    __libc_shared_globals()->tls_modules.module_table = &mod;
+    mod.first_generation = kTlsGenerationFirst;
+
+    modules.module_count = 1;
+    modules.module_table = &mod;
   } else {
     layout.reserve_exe_segment_and_tcb(nullptr, progname);
   }
+  // Enable the fast path in __tls_get_addr.
+  __libc_tls_generation_copy = modules.generation;
 
   layout.finish_layout();
 }
@@ -134,6 +161,7 @@ __noreturn static void __real_libc_init(void *raw_args,
   __libc_init_main_thread_final();
   __libc_init_common();
 
+  call_ifunc_resolvers();
   apply_gnu_relro();
 
   // Several Linux ABIs don't pass the onexit pointer, and the ones that

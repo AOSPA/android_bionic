@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 The Android Open Source Project
+ * Copyright (C) 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
-thread_local int elf_tls_variable;
+#include <gtest/gtest.h>
 
-extern "C" int* get() { return &elf_tls_variable; }
+int ret42() {
+  return 42;
+}
+
+extern "C" void* resolver() {
+  return (void*)ret42;
+}
+
+int ifunc() __attribute__((ifunc("resolver")));
+
+TEST(ifunc, function) {
+  ASSERT_EQ(42, ifunc());
+}

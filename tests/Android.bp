@@ -101,6 +101,7 @@ cc_test_library {
         "grp_pwd_file_test.cpp",
         "iconv_test.cpp",
         "ifaddrs_test.cpp",
+        "ifunc_test.cpp",
         "inttypes_test.cpp",
         "iso646_test.c",
         "langinfo_test.cpp",
@@ -390,7 +391,7 @@ cc_test_library {
                 "libdl_test.cpp",
             ],
             static_libs: [
-                "libpagemap",
+                "libmeminfo",
                 "libziparchive",
                 "libLLVMObject",
                 "libLLVMBitReader",
@@ -475,7 +476,7 @@ cc_defaults {
             static_libs: [
                 // The order of these libraries matters, do not shuffle them.
                 "libbase",
-                "libpagemap",
+                "libmeminfo",
                 "libziparchive",
                 "libz",
                 "libutils",
@@ -526,6 +527,7 @@ cc_test {
         "libtest_dt_runpath_b",
         "libtest_dt_runpath_c",
         "libtest_dt_runpath_x",
+        "libtest_dt_runpath_y",
         "libatest_simple_zip",
         "libcfi-test",
         "libcfi-test-bad",
@@ -539,7 +541,6 @@ cc_test {
         "libdl_preempt_test_1",
         "libdl_preempt_test_2",
         "libdl_test_df_1_global",
-        "libelf-tls-library",
         "libgnu-hash-table-library",
         "libsysv-hash-table-library",
         "libtestshared",
@@ -577,6 +578,10 @@ cc_test {
         "libtest_dlsym_from_this",
         "libtest_dlsym_weak_func",
         "libtest_dt_runpath_d",
+        "libtest_elftls_dynamic",
+        "libtest_elftls_dynamic_filler_1",
+        "libtest_elftls_dynamic_filler_2",
+        "libtest_elftls_dynamic_filler_3",
         "libtest_elftls_shared_var",
         "libtest_elftls_shared_var_ie",
         "libtest_elftls_tprel",
@@ -667,6 +672,13 @@ cc_test {
         "gtest_preinit_debuggerd.cpp",
         "gtest_globals.cpp",
         "gtest_main.cpp",
+
+        // The Bionic allocator has its own C++ API. It isn't packaged into its
+        // own library, so it can only be tested when it's part of libc.a.
+        "bionic_allocator_test.cpp",
+    ],
+    include_dirs: [
+        "bionic/libc",
     ],
     whole_static_libs: [
         "libBionicTests",
