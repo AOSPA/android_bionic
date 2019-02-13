@@ -155,27 +155,26 @@ DEFINE_IFUNC_FOR(strcat) {
     RETURN_FUNC(strcat_func, strcat_generic);
 }
 
-// TODO(b/121006241): Restore x86 libc function delegation
-//typedef char* strncat_func(char* __dst, const char* __src, size_t __n);
-//DEFINE_IFUNC_FOR(strncat) {
-//    __builtin_cpu_init();
-//    if (cpu_supports(SSSE3)) RETURN_FUNC(strncat_func, strncat_ssse3);
-//    RETURN_FUNC(strncat_func, strncat_openbsd);
-//}
-//
-//typedef size_t strlcat_func(char *dst, const char *src, size_t dsize);
-//DEFINE_IFUNC_FOR(strlcat) {
-//    __builtin_cpu_init();
-//    if (cpu_supports(SSSE3)) RETURN_FUNC(strlcat_func, strlcat_ssse3);
-//    RETURN_FUNC(strlcat_func, strlcat_openbsd);
-//}
-//
-//typedef size_t strlcpy_func(char *dst, const char *src, size_t dsize);
-//DEFINE_IFUNC_FOR(strlcpy) {
-//    __builtin_cpu_init();
-//    if (cpu_supports(SSSE3)) RETURN_FUNC(strlcpy_func, strlcpy_ssse3);
-//    RETURN_FUNC(strlcpy_func, strlcpy_openbsd);
-//}
+typedef char* strncat_func(char* __dst, const char* __src, size_t __n);
+DEFINE_IFUNC_FOR(strncat) {
+    __builtin_cpu_init();
+    if (cpu_supports(SSSE3)) RETURN_FUNC(strncat_func, strncat_ssse3);
+    RETURN_FUNC(strncat_func, strncat_openbsd);
+}
+
+typedef size_t strlcat_func(char *dst, const char *src, size_t dsize);
+DEFINE_IFUNC_FOR(strlcat) {
+    __builtin_cpu_init();
+    if (cpu_supports(SSSE3)) RETURN_FUNC(strlcat_func, strlcat_ssse3);
+    RETURN_FUNC(strlcat_func, strlcat_openbsd);
+}
+
+typedef size_t strlcpy_func(char *dst, const char *src, size_t dsize);
+DEFINE_IFUNC_FOR(strlcpy) {
+    __builtin_cpu_init();
+    if (cpu_supports(SSSE3)) RETURN_FUNC(strlcpy_func, strlcpy_ssse3);
+    RETURN_FUNC(strlcpy_func, strlcpy_openbsd);
+}
 
 typedef wchar_t* wcscat_func(wchar_t *s1, const wchar_t *s2);
 DEFINE_IFUNC_FOR(wcscat) {

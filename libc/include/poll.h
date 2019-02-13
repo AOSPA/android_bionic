@@ -49,7 +49,7 @@ typedef unsigned int nfds_t;
  * Returns the number of ready file descriptors on success, 0 for timeout,
  * and returns -1 and sets `errno` on failure.
  */
-int poll(struct pollfd* _Nullable __fds, nfds_t __count, int __timeout_ms) __overloadable __RENAME(poll);
+int poll(struct pollfd* _Nullable __fds, nfds_t __count, int __timeout_ms);
 
 /**
  * [ppoll(3)](http://man7.org/linux/man-pages/man3/ppoll.3.html) waits on a set of file descriptors
@@ -61,7 +61,7 @@ int poll(struct pollfd* _Nullable __fds, nfds_t __count, int __timeout_ms) __ove
  *
  * Available since API level 28.
  */
-int ppoll(struct pollfd* _Nullable __fds, nfds_t __count, const struct timespec* _Nullable __timeout, const sigset_t* _Nullable __mask) __overloadable __RENAME(ppoll) __INTRODUCED_IN(21);
+int ppoll(struct pollfd* _Nullable __fds, nfds_t __count, const struct timespec* _Nullable __timeout, const sigset_t* _Nullable __mask) __INTRODUCED_IN(21);
 
 /**
  * Like ppoll() but allows setting a signal mask with RT signals even from a 32-bit process.
