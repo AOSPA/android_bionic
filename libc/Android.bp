@@ -776,6 +776,7 @@ cc_library_static {
                 "arch-arm/generic/bionic/strcpy.S",
                 "arch-arm/generic/bionic/strlen.c",
 
+                "arch-arm/bionic/__aeabi_read_tp.S",
                 "arch-arm/bionic/atomics_arm.c",
                 "arch-arm/bionic/__bionic_clone.S",
                 "arch-arm/bionic/_exit_with_stack_teardown.S",
@@ -1240,6 +1241,7 @@ cc_library_static {
 cc_library_static {
     defaults: ["libc_defaults"],
     srcs: [
+        "bionic/bionic_elf_tls.cpp",
         "bionic/pthread_atfork.cpp",
         "bionic/pthread_attr.cpp",
         "bionic/pthread_barrier.cpp",
@@ -1647,6 +1649,13 @@ cc_library {
             version_script: ":libc.x86_64.map",
         },
     },
+
+    stubs: {
+        symbol_file: "libc.map.txt",
+        versions: ["10000"],
+    },
+
+    symbol_ordering_file: "symbol_ordering",
 }
 
 genrule {
@@ -1679,6 +1688,59 @@ genrule {
     srcs: ["libc.map.txt"],
     tool_files: [":bionic-generate-version-script"],
     cmd: "$(location :bionic-generate-version-script) x86_64 $(in) $(out)",
+}
+
+// libc_headers for libasync_safe and libpropertyinfoparser
+cc_library_headers {
+    name: "libc_headers",
+
+    host_supported: true,
+    vendor_available: true,
+    recovery_available: true,
+
+    no_libcrt: true,
+    no_libgcc: true,
+    stl: "none",
+    system_shared_libs: [],
+
+    export_include_dirs: [
+        "include",
+        "kernel/uapi",
+        "kernel/android/uapi",
+    ],
+
+    arch: {
+        arm: {
+            export_include_dirs: [
+                "kernel/uapi/asm-arm",
+            ],
+        },
+        arm64: {
+            export_include_dirs: [
+                "kernel/uapi/asm-arm64",
+            ],
+        },
+        mips: {
+            export_include_dirs: [
+                "kernel/uapi/asm-mips",
+            ],
+        },
+        mips64: {
+            export_include_dirs: [
+                "kernel/uapi/asm-mips",
+            ],
+        },
+        x86: {
+            export_include_dirs: [
+                "kernel/uapi/asm-x86",
+            ],
+        },
+        x86_64: {
+            export_include_dirs: [
+                "kernel/uapi/asm-x86",
+            ],
+        },
+    },
 }
 
 // ========================================================
@@ -2035,47 +2097,39 @@ llndk_library {
     symbol_file: "libc.map.txt",
     export_headers_as_system: true,
     export_preprocessed_headers: ["include"],
+    export_include_dirs: [
+        "kernel/android/uapi",
+        "kernel/uapi",
+    ],
     arch: {
         arm: {
             export_include_dirs: [
-                "kernel/uapi",
                 "kernel/uapi/asm-arm",
-                "kernel/android/uapi",
             ],
         },
         arm64: {
             export_include_dirs: [
-                "kernel/uapi",
                 "kernel/uapi/asm-arm64",
-                "kernel/android/uapi",
             ],
         },
         mips: {
             export_include_dirs: [
-                "kernel/uapi",
                 "kernel/uapi/asm-mips",
-                "kernel/android/uapi",
             ],
         },
         mips64: {
             export_include_dirs: [
-                "kernel/uapi",
                 "kernel/uapi/asm-mips",
-                "kernel/android/uapi",
             ],
         },
         x86: {
             export_include_dirs: [
-                "kernel/uapi",
                 "kernel/uapi/asm-x86",
-                "kernel/android/uapi",
             ],
         },
         x86_64: {
             export_include_dirs: [
-                "kernel/uapi",
                 "kernel/uapi/asm-x86",
-                "kernel/android/uapi",
             ],
         },
     },

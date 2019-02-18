@@ -20,9 +20,11 @@
 #define DRM_FOURCC_H
 #include "drm.h"
 #ifdef __cplusplus
+extern "C" {
 #endif
 #define fourcc_code(a,b,c,d) ((__u32) (a) | ((__u32) (b) << 8) | ((__u32) (c) << 16) | ((__u32) (d) << 24))
 #define DRM_FORMAT_BIG_ENDIAN (1 << 31)
+#define DRM_FORMAT_INVALID 0
 #define DRM_FORMAT_C8 fourcc_code('C', '8', ' ', ' ')
 #define DRM_FORMAT_R8 fourcc_code('R', '8', ' ', ' ')
 #define DRM_FORMAT_R16 fourcc_code('R', '1', '6', ' ')
@@ -117,6 +119,7 @@
 #define I915_FORMAT_MOD_Y_TILED_CCS fourcc_mod_code(INTEL, 4)
 #define I915_FORMAT_MOD_Yf_TILED_CCS fourcc_mod_code(INTEL, 5)
 #define DRM_FORMAT_MOD_SAMSUNG_64_32_TILE fourcc_mod_code(SAMSUNG, 1)
+#define DRM_FORMAT_MOD_SAMSUNG_16_16_TILE fourcc_mod_code(SAMSUNG, 2)
 #define DRM_FORMAT_MOD_QCOM_COMPRESSED fourcc_mod_code(QCOM, 1)
 #define DRM_FORMAT_MOD_VIVANTE_TILED fourcc_mod_code(VIVANTE, 1)
 #define DRM_FORMAT_MOD_VIVANTE_SUPER_TILED fourcc_mod_code(VIVANTE, 2)
@@ -156,5 +159,6 @@
 #define AFBC_FORMAT_MOD_TILED (1ULL << 8)
 #define AFBC_FORMAT_MOD_SC (1ULL << 9)
 #ifdef __cplusplus
+}
 #endif
 #endif

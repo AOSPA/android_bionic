@@ -39,6 +39,7 @@
 #include "libc_init_common.h"
 #include "pthread_internal.h"
 
+#include "private/bionic_elf_tls.h"
 #include "private/bionic_globals.h"
 #include "private/bionic_macros.h"
 #include "private/bionic_page.h"
@@ -82,6 +83,32 @@ static void apply_gnu_relro() {
   }
 }
 
+static void layout_static_tls(KernelArgumentBlock& args) {
+  StaticTlsLayout& layout = __libc_shared_globals()->static_tls_layout;
+  layout.reserve_bionic_tls();
+
+  const char* progname = args.argv[0];
+  ElfW(Phdr)* phdr_start = reinterpret_cast<ElfW(Phdr)*>(getauxval(AT_PHDR));
+  size_t phdr_ct = getauxval(AT_PHNUM);
+
+  static TlsModule mod;
+  if (__bionic_get_tls_segment(phdr_start, phdr_ct, 0, &mod.segment)) {
+    if (!__bionic_check_tls_alignment(&mod.segment.alignment)) {
+      async_safe_fatal("error: TLS segment alignment in \"%s\" is not a power of 2: %zu\n",
+                       progname, mod.segment.alignment);
+    }
+    mod.static_offset = layout.reserve_exe_segment_and_tcb(&mod.segment, progname);
+    mod.first_generation = 1;
+    __libc_shared_globals()->tls_modules.generation = 1;
+    __libc_shared_globals()->tls_modules.module_count = 1;
+    __libc_shared_globals()->tls_modules.module_table = &mod;
+  } else {
+    layout.reserve_exe_segment_and_tcb(nullptr, progname);
+  }
+
+  layout.finish_layout();
+}
+
 // The program startup function __libc_init() defined here is
 // used for static executables only (i.e. those that don't depend
 // on shared libraries). It is called from arch-$ARCH/bionic/crtbegin_static.S
@@ -92,16 +119,19 @@ static void apply_gnu_relro() {
 __noreturn static void __real_libc_init(void *raw_args,
                                         void (*onexit)(void) __unused,
                                         int (*slingshot)(int, char**, char**),
-                                        structors_array_t const * const structors) {
+                                        structors_array_t const * const structors,
+                                        bionic_tcb* temp_tcb) {
   BIONIC_STOP_UNWIND;
 
   // Initialize TLS early so system calls and errno work.
   KernelArgumentBlock args(raw_args);
-  __libc_init_main_thread_early(args);
+  __libc_init_main_thread_early(args, temp_tcb);
   __libc_init_main_thread_late();
   __libc_init_globals();
   __libc_shared_globals()->init_progname = args.argv[0];
   __libc_init_AT_SECURE(args.envp);
+  layout_static_tls(args);
+  __libc_init_main_thread_final();
   __libc_init_common();
 
   apply_gnu_relro();
@@ -129,16 +159,16 @@ __noreturn void __libc_init(void* raw_args,
                             void (*onexit)(void) __unused,
                             int (*slingshot)(int, char**, char**),
                             structors_array_t const * const structors) {
+  bionic_tcb temp_tcb = {};
 #if __has_feature(hwaddress_sanitizer)
   // Install main thread TLS early. It will be initialized later in __libc_init_main_thread. For now
-  // all we need is access to TLS_SLOT_TSAN.
-  pthread_internal_t* main_thread = __get_main_thread();
-  __set_tls(main_thread->tls);
-  // Initialize HWASan. This sets up TLS_SLOT_TSAN, among other things.
+  // all we need is access to TLS_SLOT_SANITIZER.
+  __set_tls(&temp_tcb.tls_slot(0));
+  // Initialize HWASan. This sets up TLS_SLOT_SANITIZER, among other things.
   __hwasan_init();
   // We are ready to run HWASan-instrumented code, proceed with libc initialization...
 #endif
-  __real_libc_init(raw_args, onexit, slingshot, structors);
+  __real_libc_init(raw_args, onexit, slingshot, structors, &temp_tcb);
 }
 
 static int g_target_sdk_version{__ANDROID_API__};

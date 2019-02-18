@@ -36,6 +36,7 @@
 #include "linker_gdb_support.h"
 #include "linker_globals.h"
 #include "linker_phdr.h"
+#include "linker_tls.h"
 #include "linker_utils.h"
 
 #include "private/bionic_globals.h"
@@ -51,6 +52,7 @@
 
 #include <async_safe/log.h>
 #include <bionic/libc_init_common.h>
+#include <bionic/pthread_internal.h>
 
 #include <vector>
 
@@ -413,6 +415,8 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
     }
   }
 
+  linker_setup_exe_static_tls(g_argv[0]);
+
   // Load ld_preloads and dependencies.
   std::vector<const char*> needed_library_name_list;
   size_t ld_preloads_count = 0;
@@ -449,6 +453,9 @@ static ElfW(Addr) linker_main(KernelArgumentBlock& args, const char* exe_to_load
     }
     si->increment_ref_count();
   }
+
+  linker_finalize_static_tls();
+  __libc_init_main_thread_final();
 
   if (!get_cfi_shadow()->InitialLinkDone(solist)) __linker_cannot_link(g_argv[0]);
 
@@ -557,7 +564,8 @@ __linker_init_post_relocation(KernelArgumentBlock& args, soinfo& linker_so);
 extern "C" ElfW(Addr) __linker_init(void* raw_args) {
   // Initialize TLS early so system calls and errno work.
   KernelArgumentBlock args(raw_args);
-  __libc_init_main_thread_early(args);
+  bionic_tcb temp_tcb = {};
+  __libc_init_main_thread_early(args, &temp_tcb);
 
   // When the linker is run by itself (rather than as an interpreter for
   // another program), AT_BASE is 0.
