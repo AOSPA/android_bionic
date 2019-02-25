@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2019 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,21 +26,30 @@
  * SUCH DAMAGE.
  */
 
-#include <errno.h>
+// This shared object test library is dlopen'ed by the main test executable.
+// This variable comes from libtest_elftls_shared_var.so, which is part of
+// static TLS. Verify that a GD-model access can access the variable.
+//
+// Accessing the static TLS variable from an solib prevents the static linker
+// from relaxing the GD access to IE and lets us test that __tls_get_addr and
+// the tlsdesc resolver handle a static TLS variable.
+extern "C" __thread int elftls_shared_var;
 
-#include "pthread_internal.h"
+extern "C" int bump_shared_var() {
+  return ++elftls_shared_var;
+}
 
-int pthread_getcpuclockid(pthread_t t, clockid_t* clockid) {
-  pid_t tid = __pthread_internal_gettid(t, "pthread_getcpuclockid");
-  if (tid == -1) return ESRCH;
+// The static linker denotes the current module by omitting the symbol from
+// the DTPMOD/TLSDESC relocations.
+static __thread int local_var_1 = 15;
+static __thread int local_var_2 = 25;
 
-  // The tid is stored in the top bits, but negated.
-  clockid_t result = ~static_cast<clockid_t>(tid) << 3;
-  // Bits 0 and 1: clock type (0 = CPUCLOCK_PROF, 1 = CPUCLOCK_VIRT, 2 = CPUCLOCK_SCHED).
-  result |= 2;
-  // Bit 2: thread (set) or process (clear)?
-  result |= (1 << 2);
+extern "C" int bump_local_vars() {
+  return ++local_var_1 + ++local_var_2;
+}
 
-  *clockid = result;
-  return 0;
+__attribute__((weak)) extern "C" __thread int missing_weak_dyn_tls;
+
+extern "C" int* missing_weak_dyn_tls_addr() {
+  return &missing_weak_dyn_tls;
 }

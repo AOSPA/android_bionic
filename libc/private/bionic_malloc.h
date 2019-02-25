@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 The Android Open Source Project
+ * Copyright (C) 2018 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,21 +26,23 @@
  * SUCH DAMAGE.
  */
 
-#include <errno.h>
+#pragma once
 
-#include "pthread_internal.h"
+#include <stdbool.h>
 
-int pthread_getcpuclockid(pthread_t t, clockid_t* clockid) {
-  pid_t tid = __pthread_internal_gettid(t, "pthread_getcpuclockid");
-  if (tid == -1) return ESRCH;
+// Opcodes for android_mallopt.
 
-  // The tid is stored in the top bits, but negated.
-  clockid_t result = ~static_cast<clockid_t>(tid) << 3;
-  // Bits 0 and 1: clock type (0 = CPUCLOCK_PROF, 1 = CPUCLOCK_VIRT, 2 = CPUCLOCK_SCHED).
-  result |= 2;
-  // Bit 2: thread (set) or process (clear)?
-  result |= (1 << 2);
+enum {
+  // Marks the calling process as a profileable zygote child, possibly
+  // initializing profiling infrastructure.
+  M_INIT_ZYGOTE_CHILD_PROFILING = 1,
+#define M_INIT_ZYGOTE_CHILD_PROFILING M_INIT_ZYGOTE_CHILD_PROFILING
+  M_RESET_HOOKS = 2,
+#define M_RESET_HOOKS M_RESET_HOOKS
+};
 
-  *clockid = result;
-  return 0;
-}
+// Manipulates bionic-specific handling of memory allocation APIs such as
+// malloc. Only for use by the Android platform itself.
+//
+// On success, returns true. On failure, returns false and sets errno.
+extern "C" bool android_mallopt(int opcode, void* arg, size_t arg_size);
