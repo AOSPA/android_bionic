@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2019 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,16 +26,17 @@
  * SUCH DAMAGE.
  */
 
-extern char __divdi3;
-extern char __moddi3;
-extern char __popcountsi2;
-extern char __udivdi3;
-extern char __umoddi3;
+#pragma once
 
-void* __bionic_libgcc_compat_symbols[] = {
-    &__divdi3,
-    &__moddi3,
-    &__popcountsi2,
-    &__udivdi3,
-    &__umoddi3,
-};
+#include <stdbool.h>
+
+#include <private/bionic_globals.h>
+#include <private/bionic_malloc_dispatch.h>
+
+// Function prototypes.
+bool InitSharedLibrary(void* impl_handle, const char* shared_lib, const char* prefix,
+                       MallocDispatch* dispatch_table);
+
+void* LoadSharedLibrary(const char* shared_lib, const char* prefix, MallocDispatch* dispatch_table);
+
+bool FinishInstallHooks(libc_globals* globals, const char* options, const char* prefix);
