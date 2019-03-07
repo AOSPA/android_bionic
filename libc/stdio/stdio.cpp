@@ -756,7 +756,7 @@ int fgetc_unlocked(FILE* fp) {
   return getc_unlocked(fp);
 }
 
-char* fgets(char* buf, int n, FILE* fp) __overloadable {
+char* fgets(char* buf, int n, FILE* fp) {
   CHECK_FP(fp);
   ScopedFileLock sfl(fp);
   return fgets_unlocked(buf, n, fp);
@@ -1078,7 +1078,7 @@ int fflush_unlocked(FILE* fp) {
   return __sflush(fp);
 }
 
-size_t fread(void* buf, size_t size, size_t count, FILE* fp) __overloadable {
+size_t fread(void* buf, size_t size, size_t count, FILE* fp) {
   CHECK_FP(fp);
   ScopedFileLock sfl(fp);
   return fread_unlocked(buf, size, count, fp);

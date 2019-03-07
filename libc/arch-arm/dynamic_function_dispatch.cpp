@@ -251,26 +251,25 @@ DEFINE_IFUNC(__strcpy_chk) {
     }
 }
 
-// TODO(b/121271714): Restore arm libc function delegation
-//typedef char* stpcpy_func(char* __dst, const char* __src);
-//DEFINE_IFUNC(stpcpy) {
-//    switch(get_cpu_variant()) {
-//        case kCortexA9:
-//            RETURN_FUNC(stpcpy_func, stpcpy_a9);
-//        default:
-//            RETURN_FUNC(stpcpy_func, stpcpy_a15);
-//    }
-//}
-//
-//typedef char* strcat_func(char* __dst, const char* __src);
-//DEFINE_IFUNC(strcat) {
-//    switch(get_cpu_variant()) {
-//        case kCortexA9:
-//            RETURN_FUNC(strcat_func, strcat_a9);
-//        default:
-//            RETURN_FUNC(strcat_func, strcat_a15);
-//    }
-//}
+typedef char* stpcpy_func(char* __dst, const char* __src);
+DEFINE_IFUNC(stpcpy) {
+    switch(get_cpu_variant()) {
+        case kCortexA9:
+            RETURN_FUNC(stpcpy_func, stpcpy_a9);
+        default:
+            RETURN_FUNC(stpcpy_func, stpcpy_a15);
+    }
+}
+
+typedef char* strcat_func(char* __dst, const char* __src);
+DEFINE_IFUNC(strcat) {
+    switch(get_cpu_variant()) {
+        case kCortexA9:
+            RETURN_FUNC(strcat_func, strcat_a9);
+        default:
+            RETURN_FUNC(strcat_func, strcat_a15);
+    }
+}
 
 typedef char* __strcat_chk_func(char* dst, const char* src, size_t dst_buf_size);
 DEFINE_IFUNC(__strcat_chk) {
