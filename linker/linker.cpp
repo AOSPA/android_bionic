@@ -698,9 +698,9 @@ class LoadTask {
     return elf_reader.Read(realpath, fd_, file_offset_, file_size);
   }
 
-  bool load() {
+  bool load(address_space_params* address_space) {
     ElfReader& elf_reader = get_elf_reader();
-    if (!elf_reader.Load(extinfo_)) {
+    if (!elf_reader.Load(address_space)) {
       return false;
     }
 
@@ -1158,14 +1158,6 @@ static int open_library(android_namespace_t* ns,
     fd = open_library_on_paths(zip_archive_cache, name, file_offset, ns->get_default_library_paths(), realpath);
   }
 
-  // TODO(dimitry): workaround for http://b/26394120 (the grey-list)
-  if (fd == -1 && ns->is_greylist_enabled() && is_greylisted(ns, name, needed_by)) {
-    // try searching for it on default_namespace default_library_path
-    fd = open_library_on_paths(zip_archive_cache, name, file_offset,
-                               g_default_namespace.get_default_library_paths(), realpath);
-  }
-  // END OF WORKAROUND
-
   return fd;
 }
 
@@ -1544,6 +1536,20 @@ static bool find_library_internal(android_namespace_t* ns,
     return true;
   }
 
+  // TODO(dimitry): workaround for http://b/26394120 (the grey-list)
+  if (ns->is_greylist_enabled() && is_greylisted(ns, task->get_name(), task->get_needed_by())) {
+    // For the libs in the greylist, switch to the default namespace and then
+    // try the load again from there. The library could be loaded from the
+    // default namespace or from another namespace (e.g. runtime) that is linked
+    // from the default namespace.
+    ns = &g_default_namespace;
+    if (load_library(ns, task, zip_archive_cache, load_tasks, rtld_flags,
+                     search_linked_namespaces)) {
+      return true;
+    }
+  }
+  // END OF WORKAROUND
+
   if (search_linked_namespaces) {
     // if a library was not found - look into linked namespaces
     // preserve current dlerror in the case it fails.
@@ -1691,10 +1697,34 @@ bool find_libraries(android_namespace_t* ns,
       load_list.push_back(task);
     }
   }
-  shuffle(&load_list);
+  bool reserved_address_recursive = false;
+  if (extinfo) {
+    reserved_address_recursive = extinfo->flags & ANDROID_DLEXT_RESERVED_ADDRESS_RECURSIVE;
+  }
+  if (!reserved_address_recursive) {
+    // Shuffle the load order in the normal case, but not if we are loading all
+    // the libraries to a reserved address range.
+    shuffle(&load_list);
+  }
+
+  // Set up address space parameters.
+  address_space_params extinfo_params, default_params;
+  size_t relro_fd_offset = 0;
+  if (extinfo) {
+    if (extinfo->flags & ANDROID_DLEXT_RESERVED_ADDRESS) {
+      extinfo_params.start_addr = extinfo->reserved_addr;
+      extinfo_params.reserved_size = extinfo->reserved_size;
+      extinfo_params.must_use_address = true;
+    } else if (extinfo->flags & ANDROID_DLEXT_RESERVED_ADDRESS_HINT) {
+      extinfo_params.start_addr = extinfo->reserved_addr;
+      extinfo_params.reserved_size = extinfo->reserved_size;
+    }
+  }
 
   for (auto&& task : load_list) {
-    if (!task->load()) {
+    address_space_params* address_space =
+        (reserved_address_recursive || !task->is_dt_needed()) ? &extinfo_params : &default_params;
+    if (!task->load(address_space)) {
       return false;
     }
   }
@@ -1804,7 +1834,7 @@ bool find_libraries(android_namespace_t* ns,
       // we should avoid linking them (because if they are not linked -> they
       // are in the local_group_roots and will be linked later).
       if (!si->is_linked() && si->get_primary_namespace() == local_group_ns) {
-        if (!si->link_image(global_group, local_group, extinfo) ||
+        if (!si->link_image(global_group, local_group, extinfo, &relro_fd_offset) ||
             !get_cfi_shadow()->AfterLoad(si, solist_get_head())) {
           return false;
         }
@@ -2165,9 +2195,13 @@ void* do_dlopen(const char* name, int flags,
            new_name);
     // Some APEXs could be optionally disabled. Only translate the path
     // when the old file is absent and the new file exists.
+    // TODO(b/124218500): Re-enable it once app compat issue is resolved
+    /*
     if (file_exists(name)) {
       LD_LOG(kLogDlopen, "dlopen %s exists, not translating", name);
-    } else if (!file_exists(new_name)) {
+    } else
+    */
+    if (!file_exists(new_name)) {
       LD_LOG(kLogDlopen, "dlopen %s does not exist, not translating",
              new_name);
     } else {
@@ -3775,7 +3809,7 @@ bool soinfo::prelink_image() {
 }
 
 bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t& local_group,
-                        const android_dlextinfo* extinfo) {
+                        const android_dlextinfo* extinfo, size_t* relro_fd_offset) {
   if (is_image_linked()) {
     // already linked.
     return true;
@@ -3922,7 +3956,7 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t& 
     }
   } else if (extinfo && (extinfo->flags & ANDROID_DLEXT_USE_RELRO)) {
     if (phdr_table_map_gnu_relro(phdr, phnum, load_bias,
-                                 extinfo->relro_fd) < 0) {
+                                 extinfo->relro_fd, relro_fd_offset) < 0) {
       DL_ERR("failed mapping GNU RELRO section for \"%s\": %s",
              get_realpath(), strerror(errno));
       return false;
