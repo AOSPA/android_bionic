@@ -29,6 +29,7 @@
 #pragma once
 
 #include <stdatomic.h>
+#include <stdio.h>
 
 #include <async_safe/log.h>
 #include <private/bionic_globals.h>
@@ -46,6 +47,7 @@ int __sanitizer_iterate(uintptr_t base, size_t size,
                         void* arg);
 void __sanitizer_malloc_disable();
 void __sanitizer_malloc_enable();
+int __sanitizer_malloc_info(int options, FILE* fp);
 
 __END_DECLS
 
@@ -62,6 +64,10 @@ extern int gMallocLeakZygoteChild;
 
 static inline const MallocDispatch* GetDispatchTable() {
   return atomic_load_explicit(&__libc_globals->current_dispatch_table, memory_order_acquire);
+}
+
+static inline const MallocDispatch* GetDefaultDispatchTable() {
+  return atomic_load_explicit(&__libc_globals->default_dispatch_table, memory_order_acquire);
 }
 
 // =============================================================================

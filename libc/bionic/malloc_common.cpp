@@ -41,11 +41,15 @@
 //                          get_malloc_leak_info.
 //   write_malloc_leak_info: Writes the leak info data to a file.
 
+#include <errno.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include <private/bionic_config.h>
+#include <private/bionic_malloc.h>
 
 #include "malloc_common.h"
+#include "malloc_limit.h"
 
 // =============================================================================
 // Global variables instantations.
@@ -91,6 +95,14 @@ extern "C" struct mallinfo mallinfo() {
     return dispatch_table->mallinfo();
   }
   return Malloc(mallinfo)();
+}
+
+extern "C" int malloc_info(int options, FILE* fp) {
+  auto dispatch_table = GetDispatchTable();
+  if (__predict_false(dispatch_table != nullptr)) {
+    return dispatch_table->malloc_info(options, fp);
+  }
+  return Malloc(malloc_info)(options, fp);
 }
 
 extern "C" int mallopt(int param, int value) {
@@ -256,6 +268,11 @@ extern "C" void __sanitizer_malloc_disable() {
 
 extern "C" void __sanitizer_malloc_enable() {
 }
+
+extern "C" int __sanitizer_malloc_info(int, FILE*) {
+  errno = ENOTSUP;
+  return -1;
+}
 #endif
 // =============================================================================
 
@@ -263,8 +280,10 @@ extern "C" void __sanitizer_malloc_enable() {
 // Platform-internal mallopt variant.
 // =============================================================================
 #if defined(LIBC_STATIC)
-extern "C" bool android_mallopt(int, void*, size_t) {
-  // There are no options supported on static executables.
+extern "C" bool android_mallopt(int opcode, void* arg, size_t arg_size) {
+  if (opcode == M_SET_ALLOCATION_LIMIT_BYTES) {
+    return LimitEnable(arg, arg_size);
+  }
   errno = ENOTSUP;
   return false;
 }

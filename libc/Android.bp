@@ -1131,7 +1131,6 @@ cc_library_static {
         "bionic/locale.cpp",
         "bionic/lockf.cpp",
         "bionic/lstat.cpp",
-        "bionic/malloc_info.cpp",
         "bionic/mblen.cpp",
         "bionic/mbrtoc16.cpp",
         "bionic/mbrtoc32.cpp",
@@ -1353,6 +1352,7 @@ cc_library_static {
     defaults: ["libc_defaults"],
     srcs: libc_common_src_files + [
         "bionic/malloc_common.cpp",
+        "bionic/malloc_limit.cpp",
     ],
     multilib: {
         lib32: {
@@ -1548,6 +1548,7 @@ filegroup {
         "bionic/malloc_common.cpp",
         "bionic/malloc_common_dynamic.cpp",
         "bionic/malloc_heapprofd.cpp",
+        "bionic/malloc_limit.cpp",
         "bionic/NetdClient.cpp",
         "arch-common/bionic/crtend_so.S",
     ],
@@ -1558,6 +1559,7 @@ filegroup {
     srcs: [
         "bionic/dl_iterate_phdr_static.cpp",
         "bionic/malloc_common.cpp",
+        "bionic/malloc_limit.cpp",
     ],
 }
 
@@ -1603,7 +1605,7 @@ cc_library {
         ],
     },
 
-    required: ["tzdata", "libc.mountpoint"],
+    required: ["tzdata"],
 
     // Leave the symbols in the shared library so that stack unwinders can produce
     // meaningful name resolution.
