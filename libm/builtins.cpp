@@ -47,11 +47,15 @@ long double fabsl(long double x) {
 }
 #endif
 
-// fma has builtin routines for ARMv7-A NEON, ARMv8, and ARM64
+// fma and sqrt have builtin routines for ARMv7-A NEON, ARMv8, and ARM64
 
 #if defined (__ARM_NEON__) || defined (__aarch64__)
 float fmaf(float x, float y, float z) { return __builtin_fmaf(x, y, z); }
 double fma(double x, double y, double z) { return __builtin_fma(x, y, z); }
+
+float sqrtf(float x) { return __builtin_sqrtf(x); }
+double sqrt(double x) { return __builtin_sqrt(x); }
+
 #endif
 
 // ceil/floor/fmax/fmin/nearbyint/rint/round/trunc have builtin routines for ARMv8 and ARM64
