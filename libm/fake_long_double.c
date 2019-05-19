@@ -65,5 +65,6 @@ long double ceill(long double x) { return ceil(x); }
 long double floorl(long double x) { return floor(x); }
 long double nearbyintl(long double x) { return nearbyint(x); }
 long double rintl(long double x) { return rint(x); }
+long double sqrtl(long double x) { return sqrt(x); }
 long double truncl(long double x) { return trunc(x); }
 #endif
