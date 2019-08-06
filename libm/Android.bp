@@ -274,7 +274,6 @@ cc_library {
             ],
             armv7_a_neon: {
                 srcs: [
-                    "arm/sqrt.S",
                     "arm/floor.S",
                 ],
 
@@ -287,9 +286,6 @@ cc_library {
                 ],
             },
             armv8_a: {
-                srcs: [
-                    "arm/sqrt.S",
-                ],
                 exclude_srcs: [
                     "upstream-freebsd/lib/msun/src/e_sqrt.c",
                     "upstream-freebsd/lib/msun/src/e_sqrtf.c",
@@ -322,7 +318,6 @@ cc_library {
             srcs: [
                 "arm64/fenv.c",
                 "arm64/lrint.S",
-                "arm64/sqrt.S",
             ],
             exclude_srcs: [
                 "upstream-freebsd/lib/msun/src/e_sqrt.c",
