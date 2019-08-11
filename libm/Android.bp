@@ -315,6 +315,8 @@ cc_library {
             },
             instruction_set: "arm",
             ldflags: ["-Wl,--hash-style=both"],
+            cflags: ["-D__AARCH32__"],
+            cppflags: ["-D__AARCH32__"],
             version_script: "libm.arm.map",
         },
 

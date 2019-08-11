@@ -56,7 +56,7 @@ double fma(double x, double y, double z) { return __builtin_fma(x, y, z); }
 
 // ceil/floor/fmax/fmin/nearbyint/rint/round/trunc have builtin routines for ARMv8 and ARM64
 
-#if defined (__ARM_ARCH_8A__) || defined (__aarch64__)
+#if defined (__AARCH32__) || defined (__aarch64__)
 float ceilf(float x) { return __builtin_ceilf(x); }
 double ceil(double x) { return __builtin_ceil(x); }
 
