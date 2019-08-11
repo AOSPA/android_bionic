@@ -60,7 +60,7 @@ long double log2l(long double x) { return log2(x); }
 long double fmal(long double a1, long double a2, long double a3) { return fma(a1, a2, a3); }
 #endif
 
-#if defined (__ARM_ARCH_8A__)
+#if defined (__AARCH32__)
 long double ceill(long double x) { return ceil(x); }
 long double floorl(long double x) { return floor(x); }
 long double nearbyintl(long double x) { return nearbyint(x); }
