@@ -2,6 +2,7 @@ cc_library_static {
     name: "liblinker_malloc",
     defaults: ["linux_bionic_supported"],
     recovery_available: true,
+    native_bridge_supported: true,
 
     srcs: [
         "linker_memory.cpp",
@@ -267,7 +268,6 @@ cc_binary {
         "libc_nomalloc",
         "libm",
         "libziparchive",
-        "libutils",
         "libbase",
         "libz",
 
@@ -305,6 +305,11 @@ cc_binary {
     },
     compile_multilib: "both",
     xom: false,
+}
+
+sh_binary {
+    name: "ldd",
+    src: "ldd",
 }
 
 cc_library {
@@ -362,6 +367,7 @@ cc_library {
     name: "ld-android",
     defaults: ["linux_bionic_supported"],
     recovery_available: true,
+    native_bridge_supported: true,
 
     nocrt: true,
     system_shared_libs: [],

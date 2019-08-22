@@ -1039,7 +1039,7 @@ static int open_library_in_zipfile(ZipArchiveCache* zip_archive_cache,
 
   ZipEntry entry;
 
-  if (FindEntry(handle, ZipString(file_path), &entry) != 0) {
+  if (FindEntry(handle, file_path, &entry) != 0) {
     // Entry was not found.
     close(fd);
     return -1;
@@ -1161,6 +1161,13 @@ static int open_library(android_namespace_t* ns,
       fd = -1;
     }
   }
+
+#if !defined(__ANDROID_APEX__)
+  if (fd == -1) {
+    std::vector<std::string> bootstrap_paths = { std::string(kSystemLibDir) + "/bootstrap" };
+    fd = open_library_on_paths(zip_archive_cache, name, file_offset, bootstrap_paths, realpath);
+  }
+#endif
 
   if (fd == -1) {
     fd = open_library_on_paths(zip_archive_cache, name, file_offset, ns->get_default_library_paths(), realpath);
@@ -2596,6 +2603,8 @@ bool link_namespaces_all_libs(android_namespace_t* namespace_from,
 }
 
 ElfW(Addr) call_ifunc_resolver(ElfW(Addr) resolver_addr) {
+  if (g_is_ldd) return 0;
+
   typedef ElfW(Addr) (*ifunc_resolver_t)(void);
   ifunc_resolver_t ifunc_resolver = reinterpret_cast<ifunc_resolver_t>(resolver_addr);
   ElfW(Addr) ifunc_addr = ifunc_resolver();
@@ -3874,6 +3883,11 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t& 
   if (is_image_linked()) {
     // already linked.
     return true;
+  }
+
+  if (g_is_ldd && !is_main_executable()) {
+    async_safe_format_fd(STDOUT_FILENO, "\t%s => %s (%p)\n", get_soname(),
+                         get_realpath(), reinterpret_cast<void*>(base));
   }
 
   local_group_root_ = local_group.front();

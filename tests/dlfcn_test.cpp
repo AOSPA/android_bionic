@@ -982,16 +982,16 @@ TEST(dlfcn, dlopen_executable_by_absolute_path) {
 }
 
 #if defined (__aarch64__)
-#define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib/arm64/"
+#define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib64/arm64/"
 #elif defined (__arm__)
 #define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib/arm/"
 #elif defined (__i386__)
 #define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib/x86/"
 #elif defined (__x86_64__)
-#define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib/x86_64/"
+#define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib64/x86_64/"
 #elif defined (__mips__)
 #if defined(__LP64__)
-#define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib/mips64/"
+#define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib64/mips64/"
 #else
 #define ALTERNATE_PATH_TO_SYSTEM_LIB "/system/lib/mips/"
 #endif
@@ -999,6 +999,7 @@ TEST(dlfcn, dlopen_executable_by_absolute_path) {
 #error "Unknown architecture"
 #endif
 #define PATH_TO_LIBC PATH_TO_SYSTEM_LIB "libc.so"
+#define PATH_TO_BOOTSTRAP_LIBC PATH_TO_SYSTEM_LIB "bootstrap/libc.so"
 #define ALTERNATE_PATH_TO_LIBC ALTERNATE_PATH_TO_SYSTEM_LIB "libc.so"
 
 TEST(dlfcn, dladdr_libc) {
@@ -1018,6 +1019,9 @@ TEST(dlfcn, dladdr_libc) {
               sizeof(ALTERNATE_PATH_TO_SYSTEM_LIB) - 1) == 0) {
     // Platform with emulated architecture.  Symlink on ARC++.
     ASSERT_TRUE(realpath(ALTERNATE_PATH_TO_LIBC, libc_realpath) == libc_realpath);
+  } else if (strncmp(PATH_TO_BOOTSTRAP_LIBC, info.dli_fname,
+                     sizeof(PATH_TO_BOOTSTRAP_LIBC) - 1) == 0) {
+    ASSERT_TRUE(realpath(PATH_TO_BOOTSTRAP_LIBC, libc_realpath) == libc_realpath);
   } else {
     // /system/lib is symlink when this test is executed on host.
     ASSERT_TRUE(realpath(PATH_TO_LIBC, libc_realpath) == libc_realpath);
