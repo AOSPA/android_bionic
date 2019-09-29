@@ -29,9 +29,7 @@
 #include <android-base/file.h>
 #include <android-base/strings.h>
 
-#include <linux/memfd.h>
 #include <sys/mman.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/vfs.h>
 #include <sys/wait.h>
@@ -363,8 +361,10 @@ TEST_F(DlExtTest, ReservedRecursive) {
 
   uint32_t* taxicab_number = reinterpret_cast<uint32_t*>(dlsym(handle_, "dlopen_testlib_taxicab_number"));
   ASSERT_DL_NOTNULL(taxicab_number);
-  EXPECT_GE(reinterpret_cast<void*>(taxicab_number), start);
-  EXPECT_LT(reinterpret_cast<void*>(taxicab_number), reinterpret_cast<char*>(start) + kLibSize);
+  // Untag the pointer so that it can be compared with start, which will be untagged.
+  void* addr = reinterpret_cast<void*>(untag_address(taxicab_number));
+  EXPECT_GE(addr, start);
+  EXPECT_LT(addr, reinterpret_cast<char*>(start) + kLibSize);
   EXPECT_EQ(1729U, *taxicab_number);
 }
 
@@ -942,7 +942,7 @@ TEST(dlext, dlopen_ext_use_memfd) {
   const std::string lib_path = GetTestlibRoot() + "/libtest_simple.so";
 
   // create memfd
-  int memfd = syscall(__NR_memfd_create, "foobar", MFD_CLOEXEC);
+  int memfd = memfd_create("foobar", MFD_CLOEXEC);
   if (memfd == -1 && errno == ENOSYS) {
     return;
   }
