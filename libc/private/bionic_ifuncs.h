@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2019 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,18 @@
  * SUCH DAMAGE.
  */
 
-/*
- * We would like __dso_handle to be:
- *   1. A const so that if a DSO does not have any RW data, .data section can
- *      be omitted.
- *   2. Of type void* so that no awkward type conversion is needed when
- *      &__dso_handle is passed to various functions, which all expect a void*.
- * To achieve both, we do the following aliasing trick.
- */
-static const void* const __dso_handle_const = &__dso_handle_const;
-__attribute__((__visibility__("hidden")))
-__attribute__((alias("__dso_handle_const"))) extern void* __dso_handle;
+#pragma once
+
+#define DEFINE_IFUNC_FOR(name) \
+    name##_func name __attribute__((ifunc(#name "_resolver"))); \
+    __attribute__((visibility("hidden"))) \
+    name##_func* name##_resolver()
+
+#define DECLARE_FUNC(type, name) \
+    __attribute__((visibility("hidden"))) \
+    type name
+
+#define RETURN_FUNC(type, name) { \
+        DECLARE_FUNC(type, name); \
+        return name; \
+    }

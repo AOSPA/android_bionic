@@ -1175,7 +1175,6 @@ cc_library_static {
         "bionic/sigprocmask.cpp",
         "bionic/spawn.cpp",
         "bionic/stat.cpp",
-        "bionic/statvfs.cpp",
         "bionic/stdlib_l.cpp",
         "bionic/strchrnul.cpp",
         "bionic/strerror.cpp",
@@ -1192,6 +1191,8 @@ cc_library_static {
         "bionic/sys_sem.cpp",
         "bionic/sys_shm.cpp",
         "bionic/sys_signalfd.cpp",
+        "bionic/sys_statfs.cpp",
+        "bionic/sys_statvfs.cpp",
         "bionic/sys_time.cpp",
         "bionic/sysinfo.cpp",
         "bionic/syslog.cpp",
@@ -1767,6 +1768,25 @@ cc_library_headers {
     sdk_version: "current",
 }
 
+// Headers that only other parts of the platform can include.
+cc_library_headers {
+    name: "bionic_libc_platform_headers",
+    visibility: [
+        "//bionic/libc/malloc_debug:__subpackages__",
+        "//bionic/libc/malloc_hooks:__subpackages__",
+        "//frameworks/av/media/libmedia:__subpackages__",
+        "//frameworks/av/media/utils:__subpackages__",
+        "//frameworks/base/core/jni:__subpackages__",
+        "//frameworks/base/services/core/jni:__subpackages__",
+        "//external/perfetto:__subpackages__",
+    ],
+    host_supported: true,
+    export_include_dirs: [
+        "platform",
+    ],
+    sdk_version: "current",
+}
+
 // libc_headers for libasync_safe and libpropertyinfoparser
 cc_library_headers {
     name: "libc_headers",
@@ -1903,7 +1923,8 @@ genrule {
 
 cc_defaults {
     name: "crt_defaults",
-    sdclang: true,
+    // Disable sdclang: TODO(b/142476859)
+    sdclang: false,
     defaults: ["linux_bionic_supported"],
     vendor_available: true,
     recovery_available: true,
@@ -2310,8 +2331,7 @@ cc_object {
     ],
 }
 
-// Generate the C++ policy sources for app, system, and global seccomp-bpf
-// filters.
+// Generate the C++ policy sources for app and system seccomp-bpf filters.
 python_binary_host {
     name: "genseccomp",
     main: "tools/genseccomp.py",
@@ -2481,38 +2501,6 @@ cc_genrule {
     ],
 }
 
-cc_genrule {
-    name: "libseccomp_policy_global_sources",
-    recovery_available: true,
-    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=global $(in)",
-
-    tools: [ "genseccomp" ],
-
-    srcs: [
-        "SYSCALLS.TXT",
-        "SECCOMP_WHITELIST_COMMON.TXT",
-        "SECCOMP_WHITELIST_SYSTEM.TXT",
-        "SECCOMP_WHITELIST_APP.TXT",
-        "SECCOMP_WHITELIST_GLOBAL.TXT",
-        "SECCOMP_BLACKLIST_COMMON.TXT",
-        ":libseccomp_gen_syscall_nrs_arm",
-        ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_mips",
-        ":libseccomp_gen_syscall_nrs_mips64",
-        ":libseccomp_gen_syscall_nrs_x86",
-        ":libseccomp_gen_syscall_nrs_x86_64",
-    ],
-
-    out: [
-        "arm64_global_policy.cpp",
-        "arm_global_policy.cpp",
-        "mips64_global_policy.cpp",
-        "mips_global_policy.cpp",
-        "x86_64_global_policy.cpp",
-        "x86_global_policy.cpp",
-    ],
-}
-
 cc_library {
     name: "libseccomp_policy",
     recovery_available: true,
@@ -2520,7 +2508,6 @@ cc_library {
     generated_sources: [
         "libseccomp_policy_app_sources",
         "libseccomp_policy_app_zygote_sources",
-        "libseccomp_policy_global_sources",
         "libseccomp_policy_system_sources",
     ],
 
