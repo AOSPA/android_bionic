@@ -26,21 +26,27 @@
  * SUCH DAMAGE.
  */
 
-#include <link.h>
+#pragma once
 
-/* Find the .ARM.exidx section (which in the case of a static executable
- * can be identified through its start and end symbols), and return its
- * beginning and numbe of entries to the caller.  Note that for static
- * executables we do not need to use the value of the PC to find the
- * EXIDX section.
- */
+#if defined(__aarch64__)
+# define __get_tls() ({ void** __val; __asm__("mrs %0, tpidr_el0" : "=r"(__val)); __val; })
+#elif defined(__arm__)
+# define __get_tls() ({ void** __val; __asm__("mrc p15, 0, %0, c13, c0, 3" : "=r"(__val)); __val; })
+#elif defined(__mips__)
+# define __get_tls() \
+    /* On mips32r1, this goes via a kernel illegal instruction trap that's optimized for v1. */ \
+    ({ register void** __val asm("v1"); \
+       __asm__(".set    push\n" \
+               ".set    mips32r2\n" \
+               "rdhwr   %0,$29\n" \
+               ".set    pop\n" : "=r"(__val)); \
+       __val; })
+#elif defined(__i386__)
+# define __get_tls() ({ void** __val; __asm__("movl %%gs:0, %0" : "=r"(__val)); __val; })
+#elif defined(__x86_64__)
+# define __get_tls() ({ void** __val; __asm__("mov %%fs:0, %0" : "=r"(__val)); __val; })
+#else
+#error unsupported architecture
+#endif
 
-extern unsigned __exidx_end;
-extern unsigned __exidx_start;
-
-_Unwind_Ptr __gnu_Unwind_Find_exidx(_Unwind_Ptr pc __unused,
-                                    int* pcount)
-{
-  *pcount = (__exidx_end-__exidx_start)/8;
-  return __exidx_start;
-}
+#include "tls_defines.h"

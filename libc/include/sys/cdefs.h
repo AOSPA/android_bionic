@@ -36,6 +36,10 @@
 
 #pragma once
 
+/**
+ * `__BIONIC__` is always defined if you're building with bionic. See
+ * https://android.googlesource.com/platform/bionic/+/master/docs/defines.md.
+ */
 #define __BIONIC__ 1
 
 #if defined(__cplusplus)
@@ -305,13 +309,7 @@
   __bos_dynamic_check_impl_and(bos_val, op, index, 1)
 
 #define __bos_trivially_ge(bos_val, index) __bos_dynamic_check_impl((bos_val), >=, (index))
-
 #define __bos_trivially_gt(bos_val, index) __bos_dynamic_check_impl((bos_val), >, (index))
-
-/* The names here are meant to match nicely with the __bos_unevaluated macros above. */
-#define __bos_trivially_not_lt __bos_trivially_ge
-#define __bos_trivially_not_le __bos_trivially_gt
-
 
 #if defined(__BIONIC_FORTIFY) || defined(__BIONIC_DECLARE_FORTIFY_HELPERS)
 #  define __BIONIC_INCLUDE_FORTIFY_HEADERS 1
