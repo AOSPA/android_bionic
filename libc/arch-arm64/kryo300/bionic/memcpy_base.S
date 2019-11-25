@@ -1,308 +1,173 @@
-/* Copyright (c) 2015 The Linux Foundation. All rights reserved.
+/*
+ * memcpy version using SIMD registers
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of The Linux Foundation nor the names of its contributors may
- *       be used to endorse or promote products derived from this software
- *       without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * Copyright (c) 2019, Arm Limited.
+ * SPDX-License-Identifier: MIT
  */
 
-#define		A53_OPT
+/* Assumptions:
+ *
+ * ARMv8-a, AArch64, unaligned accesses.
+ *
+ */
 
-#define		TEST		(0x200)
+#include <private/bionic_asm.h>
 
-#ifdef	IL_512
-#define		IL_DIST		(0x200)
-#define		PRFM_SUB	(64*1)
-#define		PRFM_HI_DIST	(0x10*2)
-#else
-#define		IL_DIST		(0x400)
-#define		PRFM_SUB	(64*2)
-#define		PRFM_HI_DIST	(0x14*2)
-#endif
+#define dstin	x0
+#define src	x1
+#define count	x2
+#define dst	x3
+#define srcend	x4
+#define dstend	x5
+#define A_x	x6
+#define B_x	x7
+#define A_w	w6
+#define B_w	w7
+#define C_w	w8
+#define tmp1	x14
+#define A_q	q0
+#define B_q	q1
+#define C_q	q2
+#define D_q	q3
+#define E_q	q4
+#define F_q	q5
+#define G_q	q6
+#define H_q	q7
 
-#define		PRFM_COPY
+#define L(l) .L ## l
 
-//Configurable parameters
-#define		PLD_COPY_SIZE		(0x400 * 0x100 * 1)
+/* Copies are split into 3 main cases: small copies of up to 16 bytes,
+   medium copies of 17..128 bytes which are fully unrolled. Large copies
+   of more than 128 bytes align the source and use an unrolled loop
+   processing 64 bytes per iteration.
+*/
 
-	PRFM	PLDL1KEEP,	[X1]
-	CMP	X2,	(320*2)
-	B.HI	copy_long
-	CMP	X2,	16
-	B.LS	copy16
-	PRFM	PSTL1KEEP,	[X0]
+	add	srcend, src, count
+	add	dstend, dstin, count
+	cmp	count, 16
+	b.ls	L(copy16)
+	cmp	count, 128
+	b.hi	L(copy_long_simd)
 
-	LDP	X6,	X7,	[X1]
-	ADD	X4,	X1,	X2
-	LDP	X12,	X13,	[X4, -16]
-	SUBS	X2,	X2,	32
-	ADD	X3,	X0,	X2
-	BGT	small_copy
-	STP	X6,	X7,	[X0]
-	STP	X12,	X13,	[X3, 16]
-	RET
+	/* Medium copies: 17..128 bytes.  */
+	ldr	A_q, [src]
+	ldr	D_q, [srcend, -16]
+	cmp	count, 32
+	b.hi	L(copy33_128)
+	str	A_q, [dstin]
+	str	D_q, [dstend, -16]
+	ret
 
 	.p2align 4
-small_copy:
-	SUBS	X2,	X2,	#32
-	BGT	2f
-	LDP	X10,	X11,	[X4, -32]
-	LDP	X8,	X9,	[X1, 16]
-	STP	X6,	X7,	[X0]
-	STP	X8,	X9,	[X0, 16]
-	STP	X10,	X11,	[X3]
-	STP	X12,	X13,	[X3, 16]
-	RET
-2:
-	BIC	X5,	X1,	#0xF
-	LDP	X8,	X9,	[X5, 16]
-	LDP	X10,	X11,	[X4, -32]
-	PRFM	PSTL1KEEP,	[X0, #80]
-	STP	X6,	X7,	[X0]
-	LDP	X6,	X7,	[X5, 32]!
-	AND	X14,	X1,	#0xF
-	SUB	X15,	X0,	X14
-	ADD	X2,	X2,	X14
-	SUBS	X2,	X2,	#0x10
-	BLE	2f
-	PRFM	PLDL1KEEP,	[X5, #48]
-	PRFM	PSTL1KEEP,	[X3]
-1:
-	STP	X8,	X9,	[X15, 16]
-	LDP	X8,	X9,	[X5, 16]
-	STP	X6,	X7,	[X15, 32]!
-	LDP	X6,	X7,	[X5, 32]!
-	SUBS	X2,	X2,	32
-	BGT	1b
-2:
-	STP	X8,	X9,	[X15, 16]
-	STP	X6,	X7,	[X15, 32]
-	STP	X10,	X11,	[X3]
-	STP	X12,	X13,	[X3, 16]
-	RET
-
-	.p2align 6
 	/* Small copies: 0..16 bytes.  */
-copy16:
-	CBZ	X2,	2f
-	PRFM	PSTL1KEEP,	[X0]
-	ADD	X3,	X0,	X2
-	ADD	X4,	X1,	X2
-	CMP	X2,	8
-	B.LO	1f
-	LDR	X6,	[X1]
-	LDR	X7,	[X4, -8]
-	STR	X6,	[X0]
-	STR	X7,	[X3, -8]
-	RET
+L(copy16):
+	/* 8-16 bytes.  */
+	cmp	count, 8
+	b.lo	1f
+	ldr	A_x, [src]
+	ldr	B_x, [srcend, -8]
+	str	A_x, [dstin]
+	str	B_x, [dstend, -8]
+	ret
+
+	.p2align 4
 1:
-	TBZ	X2,	2,	1f
-	LDR	W6,	[X1]
-	LDR	W7,	[X4, -4]
-	STR	W6,	[X0]
-	STR	W7,	[X3, -4]
-	RET
+	/* 4-7 bytes.  */
+	tbz	count, 2, 1f
+	ldr	A_w, [src]
+	ldr	B_w, [srcend, -4]
+	str	A_w, [dstin]
+	str	B_w, [dstend, -4]
+	ret
+
+	.p2align 4
 	/* Copy 0..3 bytes.  Use a branchless sequence that copies the same
-	 byte 3 times if count==1, or the 2nd byte twice if count==2.  */
+	   byte 3 times if count==1, or the 2nd byte twice if count==2.  */
 1:
-	LSR	X9,	X2,	1
-	LDRB	W6,	[X1]
-	LDRB	W7,	[X4, -1]
-	LDRB	W8,	[X1, X9]
-	STRB	W6,	[X0]
-	STRB	W8,	[X0, x9]
-	STRB	W7,	[X3, -1]
-2:	RET
+	cbz	count, 2f
+	lsr	tmp1, count, 1
+	ldrb	A_w, [src]
+	ldrb	B_w, [srcend, -1]
+	ldrb	C_w, [src, tmp1]
+	strb	A_w, [dstin]
+	strb	C_w, [dstin, tmp1]
+	strb	B_w, [dstend, -1]
+2:	ret
 
-	.p2align	6
-copy_long:
-#ifdef	PRFM_COPY
-	CMP	X2,	#PLD_COPY_SIZE
-	BGE	prfm_cpy
-#endif
-	LDP	X12,	X13,	[X1]
-	PRFM	PLDL1KEEP,	[X1, #64]
-	BIC	X5,	X1,	#0xF
-	AND	X14,	X1,	#0xF
-	SUB	X15,	X0,	X14
-	LDP	X6,	X7,	[X5, 16]
-	LDP	X8,	X9,	[X5, 32]
-	PRFM	PLDL1KEEP,	[X5, #144]
-	STP	X12,	X13,	[X0]
-	LDP	X10,	X11,	[X5, 48]
-	LDP	X12,	X13,	[X5, 64]!
-	ADD	X2,	X2,	X14
-	SUB	X2,	X2,	#144
-	PRFM	PLDL1KEEP,	[X5, #144]
-	ADD	X4,	X5,	X2
-	ADD	X3,	X15,	X2
-1:
-	STP	X6,	X7,	[X15, 16]
-	LDP	X6,	X7,	[X5, 16]
-	STP	X8,	X9,	[X15, 32]
-	LDP	X8,	X9,	[X5, 32]
-	STP	X10,	X11,	[X15, 48]
-	LDP	X10,	X11,	[X5, 48]
-	STP	X12,	X13,	[X15, 64]!
-	LDP	X12,	X13,	[X5, 64]!
-	SUBS	X2,	X2,	64
-	BGT	1b
-	LDP	X1,	X14,	[X4, 16]
-	STP	X6,	X7,	[X15, 16]
-	LDP	X6,	X7,	[X4, 32]
-	STP	X8,	X9,	[X15, 32]
-	LDP	X8,	X9,	[X4, 48]
-	STP	X10,	X11,	[X15, 48]
-	LDP	X10,	X11,	[X4, 64]
-	STP	X12,	X13,	[X15, 64]
-	STP	X1,	X14,	[X3, 80]
-	STP	X6,	X7,	[X3, 96]
-	STP	X8,	X9,	[X3, 112]
-	STP	X10,	X11,	[X3, 128]
-	RET
+	.p2align 4
+	/* Copy 33..128 bytes.  */
+L(copy33_128):
+	str	A_q, [dstin]
+	str	D_q, [dstend, -16]
+	ldr	B_q, [src, 16]
+	ldr	C_q, [srcend, -32]
+	cmp	count, 64
+	b.hi	L(copy65_128)
+	str	B_q, [dstin, 16]
+	str	C_q, [dstend, -32]
+	ret
 
-	.p2align	6
-prfm_cpy:
-	NEG	X4,	X1
-	ANDS	X4,	X4,	#0x3F
-	ADD	X15,	X0,	X4
-	PRFM	PLDL1KEEP,	[X1, 64]
-	BEQ	dst_64_bytealigned
-	SUB	X6,	X1,	#0x10
-	LDP	X7,	X8,	[X6, #0x10]!
-	ADD	X1,	X1,	X4
-	SUB	X2,	X2,	X4
-	SUB	X5,	X0,	#0x10
-	SUBS	X4,	X4,	#0x10
-	BLE	2f
+	.p2align 4
+	/* Copy 65..128 bytes.  */
+L(copy65_128):
+	ldr	E_q, [src, 32]
+	ldr	F_q, [src, 48]
+	str	B_q, [dstin, 16]
+	str	C_q, [dstend, -32]
+	ldr	G_q, [srcend, -64]
+	ldr	H_q, [srcend, -48]
+	str	E_q, [dstin, 32]
+	str	F_q, [dstin, 48]
+	str	G_q, [dstend, -64]
+	str	H_q, [dstend, -48]
+	ret
+
+	/* Align SRC to 16 byte alignment so that we don't cross cache line
+	   boundaries on both loads and stores.  There are at least 128 bytes
+	   to copy, so copy 16 bytes unaligned and then align.  The loop
+	   copies 64 bytes per iteration and prefetches one iteration ahead.  */
+
+	.p2align 4
+L(copy_long_simd):
+	ldr	D_q, [src]
+	and	tmp1, src, 15
+	bic	src, src, 15
+	sub	dst, dstin, tmp1
+	add	count, count, tmp1	/* Count is now 16 too large.  */
+	ldr	A_q, [src, 16]
+	str	D_q, [dstin]
+	ldr	B_q, [src, 32]
+	ldr	C_q, [src, 48]
+	ldr	D_q, [src, 64]!
+	subs	count, count, 128 + 16	/* Test and readjust count.  */
+	b.ls	2f
+
 1:
-	STP	X7,	X8,	[X5, #0x10]!
-	LDP	X7,	X8,	[X6, #0x10]!
-	SUBS	X4,	X4,	#0x10
-	BGT	1b
+	str	A_q, [dst, 16]
+	ldr	A_q, [src, 16]
+	str	B_q, [dst, 32]
+	ldr	B_q, [src, 32]
+	str	C_q, [dst, 48]
+	ldr	C_q, [src, 48]
+	str	D_q, [dst, 64]!
+	ldr	D_q, [src, 64]!
+	subs	count, count, 64
+	b.hi	1b
+
+	/* Write the last full set of 64 bytes.  The remainder is at most 64
+	   bytes, so it is safe to always copy 64 bytes from the end even if
+	   there is just 1 byte left.  */
 2:
-	STP	X7,	X8,	[X5, #0x10]
-dst_64_bytealigned:
-	MOV	X4,	#(IL_DIST)
-	SUB	X3,	X4,	#1
-	AND	X6,	X15,	X3
-	AND	X4,	X1,	X3
-	PRFM	PLDL1KEEP,	[x1, 128]
-	SUBS	X6,	X4,	X6
-	SUB	X7,	XZR,	X6
-	CSEL	X7,	X7,	X6,	LT
-	PRFM	PLDL1KEEP,	[x1, 192]
-	MOV	X4,	#(IL_DIST)
-	EOR	X8,	X15,	X1
-	ANDS	X8,	X8,	X4
-	CSEL	X11,	X4,	XZR,	EQ
-	PRFM	PLDL1KEEP,	[x1, 256]
-	LSR	X5,	X4,	1
-	SUB	X9,	XZR,	X9
-	CSEL	X9,	XZR,	X9,	EQ
-	PRFM	PLDL1KEEP,	[x1, 320]
-	CMP	X6,	X9
-	BLT	1f
-	ADDS	X8,	X8,	XZR
-	CSEL	X9,	X7,	X6,	EQ
-	SUB	X7,	XZR,	X9
-	ADD	X11,	X4,	X11
-	BNE	1f
-	ADD	X11,	X11,	X4
-	CMP	X6,	X5
-	CSEL	X11,	X4,	X11,	LT
-1:
-	ADD	X6,	X11,	X7
-	LDP	X7,	X8,	[X1]
-	LDP	X9,	X10,	[X1, #16]
-	PRFM	PLDL1KEEP,	[x1, 384]
-
-	ADD	X6,	X6,	#(PRFM_HI_DIST << 6)
-	BIC	X6,	X6,	#0x3F
-	ADD	X3,	X1,	X6
-	SUB	X3,	X3,	#(PRFM_SUB)
-	PRFM	PLDL1KEEP,	[x1, 448]
-	SUB	X4,	X3,	X1
-	SUB	X4,	X4,	#(TEST)
-	SUB	X5,	X2,	X4
-	SUB	X5,	X5,	X6
-	PRFM	PLDL1KEEP,	[x1, 512]
-	LDP	X11,	X12,	[X1, #32]
-	LDP	X13,	X14,	[X1, #48]!
-	SUB	X15,	X15,	#16
-	SUB	X4,	X4,	#0x40 * 2
-
-double_pld:
-	PRFM	PLDL1KEEP,	[X1, #(TEST + 16)]
-	STP	X7,	X8,	[X15, #16]
-	LDP	X7,	X8,	[X1, #16]
-	STP	X9,	X10,	[X15, #32]
-	LDP	X9,	X10,	[X1, #32]
-	PRFM	PLDL3KEEP,	[X3]
-	ADD	X3,	X3,	#64
-	STP	X11,	X12,	[X15, #48]
-	LDP	X11,	X12,	[X1, #48]
-	STP	X13,	X14,	[X15, #64]!
-	LDP	X13,	X14,	[X1, #64]!
-	SUBS	X4,	X4,	#0x40
-	BGT	double_pld
-single_pld:
-prfm_copy_loop:
-	PRFM	PLDL3KEEP,	[X3]
-	ADD	X3,	X3,	#64
-	STP	X7,	X8,	[X15, #16]
-	LDP	X7,	X8,	[X1, #16]
-	STP	X9,	X10,	[X15, #32]
-	LDP	X9,	X10,	[X1, #32]
-	STP	X11,	X12,	[X15, #48]
-	LDP	X11,	X12,	[X1, #48]
-	STP	X13,	X14,	[X15, #64]!
-	LDP	X13,	X14,	[X1, #64]!
-	SUBS	X5,	X5,	#0x40
-	BGT	prfm_copy_loop
-prfm_done:
-	PRFM	PLDL3KEEP,	[X3]
-plded_copy_loop:
-	STP	X7,	X8,	[X15, #16]
-	LDP	X7,	X8,	[X1, #16]
-	STP	X9,	X10,	[X15, #32]
-	LDP	X9,	X10,	[X1, #32]
-	STP	X11,	X12,	[X15, #48]
-	LDP	X11,	X12,	[X1, #48]
-	STP	X13,	X14,	[X15, #64]!
-	LDP	X13,	X14,	[X1, #64]!
-	SUBS	X6,	X6,	#0x40
-	BGT	plded_copy_loop
-	ADD	X4,	X1,	X5
-	STP	X7,	X8,	[X15, #16]
-	LDP	X1,	X2,	[X4, #16]
-	STP	X9,	X10,	[X15, 32]
-	LDP	X7,	X8,	[X4, 32]
-	STP	X11,	X12,	[X15, 48]
-	LDP	X9,	X10,	[X4, 48]
-	STP	X13,	X14,	[X15, 64]
-	LDP	X11,	X12,	[X4, 64]
-	ADD	X3,	X15,	X5
-	STP	X1,	X2,	[X3, 80]
-	STP	X7,	X8,	[X3, 96]
-	STP	X9,	X10,	[X3, 112]
-	STP	X11,	X12,	[X3, 128]
-	RET
+	ldr	E_q, [srcend, -64]
+	str	A_q, [dst, 16]
+	ldr	A_q, [srcend, -48]
+	str	B_q, [dst, 32]
+	ldr	B_q, [srcend, -32]
+	str	C_q, [dst, 48]
+	ldr	C_q, [srcend, -16]
+	str	D_q, [dst, 64]
+	str	E_q, [dstend, -64]
+	str	A_q, [dstend, -48]
+	str	B_q, [dstend, -32]
+	str	C_q, [dstend, -16]
+	ret
