@@ -26,39 +26,39 @@
  * SUCH DAMAGE.
  */
 
-#include "private/bionic_call_ifunc_resolver.h"
-#include <sys/auxv.h>
-#include <sys/ifunc.h>
+#pragma once
 
-#include "private/bionic_auxv.h"
+#include <unistd.h>
 
-// This code is called in the linker before it has been relocated, so minimize calls into other
-// parts of Bionic. In particular, we won't ever have two ifunc resolvers called concurrently, so
-// initializing the ifunc resolver argument doesn't need to be thread-safe.
+#include "private/bionic_macros.h"
+#include "private/ErrnoRestorer.h"
 
-ElfW(Addr) __bionic_call_ifunc_resolver(ElfW(Addr) resolver_addr) {
-#if defined(__aarch64__)
-  typedef ElfW(Addr) (*ifunc_resolver_t)(uint64_t, __ifunc_arg_t*);
-  static __ifunc_arg_t arg;
-  static bool initialized = false;
-  if (!initialized) {
-    initialized = true;
-    arg._size = sizeof(__ifunc_arg_t);
-    arg._hwcap = getauxval(AT_HWCAP);
-    arg._hwcap2 = getauxval(AT_HWCAP2);
+class ScopedFd final {
+ public:
+  explicit ScopedFd(int fd) : fd_(fd) {
   }
-  return reinterpret_cast<ifunc_resolver_t>(resolver_addr)(arg._hwcap | _IFUNC_ARG_HWCAP, &arg);
-#elif defined(__arm__)
-  typedef ElfW(Addr) (*ifunc_resolver_t)(unsigned long);
-  static unsigned long hwcap;
-  static bool initialized = false;
-  if (!initialized) {
-    initialized = true;
-    hwcap = getauxval(AT_HWCAP);
+
+  ScopedFd() : fd_(-1) {
   }
-  return reinterpret_cast<ifunc_resolver_t>(resolver_addr)(hwcap);
-#else
-  typedef ElfW(Addr) (*ifunc_resolver_t)(void);
-  return reinterpret_cast<ifunc_resolver_t>(resolver_addr)();
-#endif
-}
+
+  ~ScopedFd() {
+    reset(-1);
+  }
+
+  void reset(int fd = -1) {
+    if (fd_ != -1) {
+      ErrnoRestorer e;
+      close(fd_);
+    }
+    fd_ = fd;
+  }
+
+  int get() const {
+    return fd_;
+  }
+
+ private:
+  int fd_;
+
+  BIONIC_DISALLOW_COPY_AND_ASSIGN(ScopedFd);
+};
