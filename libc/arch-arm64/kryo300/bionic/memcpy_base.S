@@ -21,6 +21,14 @@
 #define dstend	x5
 #define A_x	x6
 #define B_x	x7
+#define C_x	x8
+#define D_x	x9
+#define E_x	x10
+#define F_x	x11
+#define G_x	x12
+#define H_x	x13
+#define I_x	x14
+#define J_x	x15
 #define A_w	w6
 #define B_w	w7
 #define C_w	w8
@@ -47,7 +55,7 @@
 	cmp	count, 16
 	b.ls	L(copy16)
 	cmp	count, 128
-	b.hi	L(copy_long_simd)
+	b.hi	L(copy_long)
 
 	/* Medium copies: 17..128 bytes.  */
 	ldr	A_q, [src]
@@ -122,52 +130,51 @@ L(copy65_128):
 	str	H_q, [dstend, -48]
 	ret
 
-	/* Align SRC to 16 byte alignment so that we don't cross cache line
+	/* Align DST to 16 byte alignment so that we don't cross cache line
 	   boundaries on both loads and stores.  There are at least 128 bytes
 	   to copy, so copy 16 bytes unaligned and then align.  The loop
 	   copies 64 bytes per iteration and prefetches one iteration ahead.  */
 
 	.p2align 4
-L(copy_long_simd):
-	ldr	D_q, [src]
-	and	tmp1, src, 15
-	bic	src, src, 15
-	sub	dst, dstin, tmp1
-	add	count, count, tmp1	/* Count is now 16 too large.  */
-	ldr	A_q, [src, 16]
-	str	D_q, [dstin]
-	ldr	B_q, [src, 32]
-	ldr	C_q, [src, 48]
-	ldr	D_q, [src, 64]!
-	subs	count, count, 128 + 16	/* Test and readjust count.  */
-	b.ls	2f
-
-1:
-	str	A_q, [dst, 16]
-	ldr	A_q, [src, 16]
-	str	B_q, [dst, 32]
-	ldr	B_q, [src, 32]
-	str	C_q, [dst, 48]
-	ldr	C_q, [src, 48]
-	str	D_q, [dst, 64]!
-	ldr	D_q, [src, 64]!
+L(copy_long):
+	and	tmp1, dstin, 15
+	bic	dst, dstin, 15
+	ldp	G_x, H_x, [src]
+	sub	src, src, tmp1
+	add	count, count, tmp1      /* Count is now 16 too large.  */
+	ldp	A_x, B_x, [src, 16]
+	stp	G_x, H_x, [dstin]
+	ldp	C_x, D_x, [src, 32]
+	ldp	E_x, F_x, [src, 48]
+	ldp	G_x, H_x, [src, 64]!
+	subs	count, count, 128 + 16  /* Test and readjust count.  */
+	b.ls	L(last64)
+L(loop64):
+	stp	A_x, B_x, [dst, 16]
+	ldp	A_x, B_x, [src, 16]
+	stp	C_x, D_x, [dst, 32]
+	ldp	C_x, D_x, [src, 32]
+	stp	E_x, F_x, [dst, 48]
+	ldp	E_x, F_x, [src, 48]
+	stp	G_x, H_x, [dst, 64]!
+	ldp	G_x, H_x, [src, 64]!
 	subs	count, count, 64
-	b.hi	1b
+	b.hi	L(loop64)
 
 	/* Write the last full set of 64 bytes.  The remainder is at most 64
 	   bytes, so it is safe to always copy 64 bytes from the end even if
 	   there is just 1 byte left.  */
-2:
-	ldr	E_q, [srcend, -64]
-	str	A_q, [dst, 16]
-	ldr	A_q, [srcend, -48]
-	str	B_q, [dst, 32]
-	ldr	B_q, [srcend, -32]
-	str	C_q, [dst, 48]
-	ldr	C_q, [srcend, -16]
-	str	D_q, [dst, 64]
-	str	E_q, [dstend, -64]
-	str	A_q, [dstend, -48]
-	str	B_q, [dstend, -32]
-	str	C_q, [dstend, -16]
+L(last64):
+	ldp	I_x, J_x, [srcend, -64]
+	stp	A_x, B_x, [dst, 16]
+	ldp	A_x, B_x, [srcend, -48]
+	stp	C_x, D_x, [dst, 32]
+	ldp	C_x, D_x, [srcend, -32]
+	stp	E_x, F_x, [dst, 48]
+	ldp	E_x, F_x, [srcend, -16]
+	stp	G_x, H_x, [dst, 64]
+	stp	I_x, J_x, [dstend, -64]
+	stp	A_x, B_x, [dstend, -48]
+	stp	C_x, D_x, [dstend, -32]
+	stp	E_x, F_x, [dstend, -16]
 	ret
