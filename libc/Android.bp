@@ -726,14 +726,6 @@ cc_library_static {
                     "arch-arm64/generic/bionic/__memcpy_chk.S",
                 ],
             },
-            kryo300: {
-                srcs: [
-                    "arch-arm64/kryo300/bionic/__memcpy_chk.S",
-                ],
-                exclude_srcs: [
-                    "arch-arm64/generic/bionic/__memcpy_chk.S",
-                ],
-            },
         },
     },
 }
@@ -853,19 +845,6 @@ cc_library_static {
                     "arch-arm64/kryo/bionic/memcpy.S",
                     "arch-arm64/kryo/bionic/memmove.S",
                     "arch-arm64/kryo/bionic/wmemmove.S",
-                ],
-                exclude_srcs: [
-                    "arch-arm64/generic/bionic/memcpy.S",
-                    "arch-arm64/generic/bionic/memmove.S",
-                    "arch-arm64/generic/bionic/wmemmove.S",
-                ],
-            },
-            kryo300: {
-                srcs: [
-                    "arch-arm64/kryo300/bionic/__memcpy.S",
-                    "arch-arm64/kryo300/bionic/memcpy.S",
-                    "arch-arm64/kryo300/bionic/memmove.S",
-                    "arch-arm64/kryo300/bionic/wmemmove.S",
                 ],
                 exclude_srcs: [
                     "arch-arm64/generic/bionic/memcpy.S",
