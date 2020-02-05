@@ -156,6 +156,7 @@ filegroup {
         "linker_dlwarning.cpp",
         "linker_cfi.cpp",
         "linker_config.cpp",
+        "linker_debug.cpp",
         "linker_gdb_support.cpp",
         "linker_globals.cpp",
         "linker_libc_support.c",
@@ -164,6 +165,7 @@ filegroup {
         "linker_logger.cpp",
         "linker_mapped_file_fragment.cpp",
         "linker_phdr.cpp",
+        "linker_relocate.cpp",
         "linker_sdk_versions.cpp",
         "linker_soinfo.cpp",
         "linker_tls.cpp",
@@ -176,6 +178,7 @@ filegroup {
     name: "linker_sources_arm",
     srcs: [
         "arch/arm/begin.S",
+        "arch/arm_neon/linker_gnu_hash_neon.cpp",
     ],
 }
 
@@ -184,6 +187,7 @@ filegroup {
     srcs: [
         "arch/arm64/begin.S",
         "arch/arm64/tlsdesc_resolver.S",
+        "arch/arm_neon/linker_gnu_hash_neon.cpp",
     ],
 }
 
@@ -243,18 +247,23 @@ cc_defaults {
         },
         arm64: {
             srcs: [":linker_sources_arm64"],
+            static_libs: ["libgcc_stripped"],
         },
         x86: {
             srcs: [":linker_sources_x86"],
+            static_libs: ["libgcc_stripped"],
         },
         x86_64: {
             srcs: [":linker_sources_x86_64"],
+            static_libs: ["libgcc_stripped"],
         },
         mips: {
             srcs: [":linker_sources_mips"],
+            static_libs: ["libgcc_stripped"],
         },
         mips64: {
             srcs: [":linker_sources_mips64"],
+            static_libs: ["libgcc_stripped"],
         },
     },
 
@@ -456,10 +465,12 @@ cc_test {
         "linked_list_test.cpp",
         "linker_sleb128_test.cpp",
         "linker_utils_test.cpp",
+        "linker_gnu_hash_test.cpp",
 
         // Parts of the linker that we're testing.
         "linker_block_allocator.cpp",
         "linker_config.cpp",
+        "linker_debug.cpp",
         "linker_test_globals.cpp",
         "linker_utils.cpp",
     ],
@@ -469,4 +480,30 @@ cc_test {
         "libbase",
         "liblog",
     ],
+
+    arch: {
+        arm: {
+            srcs: ["arch/arm_neon/linker_gnu_hash_neon.cpp"],
+        },
+        arm64: {
+            srcs: ["arch/arm_neon/linker_gnu_hash_neon.cpp"],
+        },
+    },
+}
+
+cc_benchmark {
+    name: "linker-benchmarks",
+
+    srcs: [
+        "linker_gnu_hash_benchmark.cpp",
+    ],
+
+    arch: {
+        arm: {
+            srcs: ["arch/arm_neon/linker_gnu_hash_neon.cpp"],
+        },
+        arm64: {
+            srcs: ["arch/arm_neon/linker_gnu_hash_neon.cpp"],
+        },
+    },
 }

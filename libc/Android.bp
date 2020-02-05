@@ -1424,6 +1424,7 @@ cc_library_static {
         "libc_native_allocator_defaults",
     ],
     srcs: libc_common_src_files + [
+        "bionic/heap_tagging.cpp",
         "bionic/malloc_common.cpp",
         "bionic/malloc_limit.cpp",
     ],
@@ -1629,9 +1630,11 @@ filegroup {
     srcs: [
         "arch-common/bionic/crtbegin_so.c",
         "arch-common/bionic/crtbrand.S",
+        "bionic/heap_tagging.cpp",
         "bionic/icu.cpp",
         "bionic/malloc_common.cpp",
         "bionic/malloc_common_dynamic.cpp",
+        "bionic/android_profiling_dynamic.cpp",
         "bionic/malloc_heapprofd.cpp",
         "bionic/malloc_limit.cpp",
         "bionic/ndk_cruft.cpp",
@@ -1644,6 +1647,7 @@ filegroup {
 filegroup {
     name: "libc_sources_static",
     srcs: [
+        "bionic/heap_tagging.cpp",
         "bionic/malloc_common.cpp",
         "bionic/malloc_limit.cpp",
     ],
@@ -1738,7 +1742,7 @@ cc_library {
                 keep_symbols_and_debug_frame: true,
             },
 
-            whole_static_libs: [ "libgcc_stripped" ],
+            whole_static_libs: [ "libunwind_llvm" ],
         },
         arm64: {
             version_script: ":libc.arm64.map",
@@ -1748,6 +1752,8 @@ cc_library {
             strip: {
                 keep_symbols: true,
             },
+
+            whole_static_libs: [ "libgcc_stripped" ],
         },
         x86: {
             // TODO: This is to work around b/24465209. Remove after root cause is fixed.
@@ -1761,6 +1767,8 @@ cc_library {
             strip: {
                 keep_symbols: true,
             },
+
+            whole_static_libs: [ "libgcc_stripped" ],
         },
         x86_64: {
             version_script: ":libc.x86_64.map",
@@ -1770,6 +1778,8 @@ cc_library {
             strip: {
                 keep_symbols: true,
             },
+
+            whole_static_libs: [ "libgcc_stripped" ],
         },
     },
 
@@ -1830,8 +1840,10 @@ cc_library_headers {
         "//external/perfetto:__subpackages__",
         "//external/scudo:__subpackages__",
         "//system/core/debuggerd:__subpackages__",
+        "//system/memory/libmemunreachable:__subpackages__",
     ],
     host_supported: true,
+    vendor_available: true,
     recovery_available: true,
     native_bridge_supported: true,
     export_include_dirs: [
@@ -1854,6 +1866,14 @@ cc_library_headers {
     no_libcrt: true,
     stl: "none",
     system_shared_libs: [],
+
+    // The build system generally requires that any dependencies of a target
+    // with an sdk_version must have a lower sdk_version. By setting sdk_version
+    // to 1 we let targets with an sdk_version that need to depend on the libc
+    // headers but cannot depend on libc itself due to circular dependencies
+    // (such as libunwind_llvm) depend on the headers. Setting sdk_version to 1
+    // is correct because the headers can support any sdk_version.
+    sdk_version: "1",
 
     export_include_dirs: [
         "include",
@@ -2592,6 +2612,7 @@ cc_library {
 cc_defaults {
     name: "libc_scudo_wrapper_defaults",
     srcs: [
+        "bionic/heap_tagging.cpp",
         "bionic/malloc_common.cpp",
         "bionic/malloc_common_dynamic.cpp",
         "bionic/malloc_heapprofd.cpp",
