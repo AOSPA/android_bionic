@@ -71,6 +71,7 @@ cc_defaults {
         fuzzer: false,
     },
     native_coverage: false,
+    ramdisk_available: true,
     recovery_available: true,
     native_bridge_supported: true,
 
@@ -85,24 +86,26 @@ cc_defaults {
     },
 }
 
+libc_scudo_product_variables = {
+    malloc_not_svelte: {
+        cflags: ["-DUSE_SCUDO"],
+        whole_static_libs: ["libscudo"],
+        exclude_static_libs: [
+            "libjemalloc5",
+            "libc_jemalloc_wrapper",
+        ],
+    },
+}
+
 // Defaults for native allocator libs/includes to make it
 // easier to change.
-// To enable scudo, change the below to libc_scudo_defaults
-// and comment out the defaults line in libc_scudo shared
-// library.
+// Enable scudo for non-svelte config by adding the line:
+//     product_variables: libc_scudo_product_variables,
+// to the cc_defaults below. And remove the defaults line
+// in the libc_scudo library.
 // ========================================================
 cc_defaults {
     name: "libc_native_allocator_defaults",
-
-    defaults: ["libc_jemalloc5_defaults"],
-}
-
-cc_defaults {
-    name: "libc_jemalloc5_defaults",
-
-    include_dirs: [
-        "external/jemalloc_new/include",
-    ],
 
     whole_static_libs: [
         "libjemalloc5",
@@ -118,30 +121,9 @@ cc_library_static {
     srcs: ["bionic/jemalloc_wrapper.cpp"],
     cflags: ["-fvisibility=hidden"],
 
-    include_dirs: [
-        "external/jemalloc_new/include",
-    ],
-}
-
-cc_defaults {
-    name: "libc_scudo_defaults",
-
-    cflags: [
-        "-DUSE_SCUDO_SVELTE",
-    ],
-
-    product_variables: {
-        malloc_not_svelte: {
-            cflags: [
-                "-UUSE_SCUDO_SVELTE",
-                "-DUSE_SCUDO",
-            ],
-        },
-    },
-
-    whole_static_libs: [
-        "libscudo",
-    ],
+    // Used to pull in the jemalloc include directory so that if the
+    // library is removed, the include directory is also removed.
+    static_libs: ["libjemalloc5"],
 }
 
 // ========================================================
@@ -359,7 +341,6 @@ cc_library_static {
     defaults: ["libc_defaults"],
     srcs: [
         "upstream-freebsd/lib/libc/gen/glob.c",
-        "upstream-freebsd/lib/libc/stdlib/realpath.c",
     ],
 
     cflags: [
@@ -1125,7 +1106,7 @@ cc_library_static {
         "bionic/clone.cpp",
         "bionic/ctype.cpp",
         "bionic/dirent.cpp",
-        "bionic/dup2.cpp",
+        "bionic/dup.cpp",
         "bionic/environ.cpp",
         "bionic/error.cpp",
         "bionic/eventfd_read.cpp",
@@ -1134,7 +1115,9 @@ cc_library_static {
         "bionic/faccessat.cpp",
         "bionic/fchmod.cpp",
         "bionic/fchmodat.cpp",
+        "bionic/fcntl.cpp",
         "bionic/fdsan.cpp",
+        "bionic/fdtrack.cpp",
         "bionic/ffs.cpp",
         "bionic/fgetxattr.cpp",
         "bionic/flistxattr.cpp",
@@ -1200,8 +1183,10 @@ cc_library_static {
         "bionic/raise.cpp",
         "bionic/rand.cpp",
         "bionic/readlink.cpp",
+        "bionic/realpath.cpp",
         "bionic/reboot.cpp",
         "bionic/recv.cpp",
+        "bionic/recvmsg.cpp",
         "bionic/rename.cpp",
         "bionic/rmdir.cpp",
         "bionic/scandir.cpp",
@@ -1322,12 +1307,14 @@ cc_library_static {
         // The following implementations depend on pthread data or implementation,
         // so we can't include them in libc_ndk.a.
         "bionic/__cxa_thread_atexit_impl.cpp",
+        "bionic/android_unsafe_frame_pointer_chase.cpp",
         "stdlib/atexit.c",
         "bionic/fork.cpp",
     ],
 
     cppflags: ["-Wold-style-cast"],
     include_dirs: ["bionic/libstdc++/include"],
+    header_libs: ["bionic_libc_platform_headers"],
     name: "libc_pthread",
 }
 
@@ -1423,6 +1410,7 @@ cc_library_static {
         "libc_defaults",
         "libc_native_allocator_defaults",
     ],
+    ramdisk_available: false,
     srcs: libc_common_src_files + [
         "bionic/heap_tagging.cpp",
         "bionic/malloc_common.cpp",
@@ -1835,7 +1823,7 @@ cc_library_headers {
     name: "bionic_libc_platform_headers",
     visibility: [
         "//art:__subpackages__",
-        "//bionic/libc:__subpackages__",
+        "//bionic:__subpackages__",
         "//frameworks:__subpackages__",
         "//external/perfetto:__subpackages__",
         "//external/scudo:__subpackages__",
@@ -1844,6 +1832,7 @@ cc_library_headers {
     ],
     host_supported: true,
     vendor_available: true,
+    ramdisk_available: true,
     recovery_available: true,
     native_bridge_supported: true,
     export_include_dirs: [
@@ -1860,6 +1849,7 @@ cc_library_headers {
 
     host_supported: true,
     vendor_available: true,
+    ramdisk_available: true,
     recovery_available: true,
     native_bridge_supported: true,
 
@@ -2002,6 +1992,7 @@ cc_defaults {
     sdclang: false,
     defaults: ["linux_bionic_supported"],
     vendor_available: true,
+    ramdisk_available: true,
     recovery_available: true,
     native_bridge_supported: true,
 

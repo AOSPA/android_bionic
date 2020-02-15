@@ -45,6 +45,7 @@
 #include <android-base/file.h>
 #include <android-base/properties.h>
 #include <android-base/stringprintf.h>
+#include <bionic/malloc_tagged_pointers.h>
 #include <private/bionic_malloc_dispatch.h>
 #include <private/MallocXmlElem.h>
 
@@ -906,6 +907,7 @@ ssize_t debug_malloc_backtrace(void* pointer, uintptr_t* frames, size_t max_fram
   if (!(g_debug->config().options() & BACKTRACE)) {
     return 0;
   }
+  pointer = UntagPointer(pointer);
   return PointerData::GetFrames(pointer, frames, max_frames);
 }
 

@@ -1707,6 +1707,7 @@ LIBC_PRIVATE {
     android_gethostbyaddrfornetcontext;
     android_gethostbynamefornet;
     android_gethostbynamefornetcontext;
+    android_unsafe_frame_pointer_chase;
     arc4random_addrandom; # arm x86 mips
     arc4random_stir; # arm x86 mips
     atexit; # arm
@@ -1752,6 +1753,9 @@ LIBC_PLATFORM {
     __system_property_set_filename;
     __system_property_update;
     android_fdsan_get_fd_table;
+    android_fdtrack_compare_exchange_hook; # llndk
+    android_fdtrack_get_enabled; # llndk
+    android_fdtrack_set_enabled; # llndk
     android_net_res_stats_get_info_for_net;
     android_net_res_stats_aggregate;
     android_net_res_stats_get_usable_servers;
