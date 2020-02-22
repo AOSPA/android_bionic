@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2020 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,27 +26,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef __BIONIC_PRIVATE_BIONIC_CTYPE_H_
-#define __BIONIC_PRIVATE_BIONIC_CTYPE_H_
+extern "C" void internal_function();
 
-static inline bool IsAlpha(int ch) {
-  return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
+extern "C" void public_function() {
+  internal_function();
 }
-
-static inline bool IsDigit(int ch) {
-  return (ch >= '0' && ch <= '9');
-}
-
-static inline bool IsSpace(int ch) {
-  return (ch == ' ') || (ch >= '\t' && ch <= '\r');
-}
-
-static inline bool IsUpper(int ch) {
-  return (ch >= 'A' && ch <= 'Z');
-}
-
-static inline bool IsXDigit(int ch) {
-  return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f');
-}
-
-#endif

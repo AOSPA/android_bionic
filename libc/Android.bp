@@ -47,6 +47,9 @@ libc_common_flags = [
     // Clang's exit-time destructor registration hides __dso_handle, but
     // __dso_handle needs to have default visibility on ARM32. See b/73485611.
     "-Wexit-time-destructors",
+
+    // GWP-ASan requires platform TLS.
+    "-fno-emulated-tls",
 ]
 
 // Define some common cflags
@@ -61,6 +64,8 @@ cc_defaults {
     include_dirs: [
         "bionic/libc/async_safe/include",
     ],
+
+    header_libs: ["gwp_asan_headers"],
 
     stl: "none",
     system_shared_libs: [],
@@ -99,10 +104,9 @@ libc_scudo_product_variables = {
 
 // Defaults for native allocator libs/includes to make it
 // easier to change.
-// Enable scudo for non-svelte config by adding the line:
+// To disable scudo for the non-svelte config remove the line:
 //     product_variables: libc_scudo_product_variables,
-// to the cc_defaults below. And remove the defaults line
-// in the libc_scudo library.
+// in the cc_defaults below.
 // ========================================================
 cc_defaults {
     name: "libc_native_allocator_defaults",
@@ -111,6 +115,8 @@ cc_defaults {
         "libjemalloc5",
         "libc_jemalloc_wrapper",
     ],
+    header_libs: ["gwp_asan_headers"],
+    product_variables: libc_scudo_product_variables,
 }
 
 // Functions not implemented by jemalloc directly, or that need to
@@ -1412,6 +1418,7 @@ cc_library_static {
     ],
     ramdisk_available: false,
     srcs: libc_common_src_files + [
+        "bionic/gwp_asan_wrappers.cpp",
         "bionic/heap_tagging.cpp",
         "bionic/malloc_common.cpp",
         "bionic/malloc_limit.cpp",
@@ -1439,6 +1446,7 @@ cc_library_static {
     ],
 
     whole_static_libs: [
+        "gwp_asan",
         "libc_bionic_ndk",
         "libc_bootstrap",
         "libc_fortify",
@@ -1618,6 +1626,7 @@ filegroup {
     srcs: [
         "arch-common/bionic/crtbegin_so.c",
         "arch-common/bionic/crtbrand.S",
+        "bionic/gwp_asan_wrappers.cpp",
         "bionic/heap_tagging.cpp",
         "bionic/icu.cpp",
         "bionic/malloc_common.cpp",
@@ -1635,6 +1644,7 @@ filegroup {
 filegroup {
     name: "libc_sources_static",
     srcs: [
+        "bionic/gwp_asan_wrappers.cpp",
         "bionic/heap_tagging.cpp",
         "bionic/malloc_common.cpp",
         "bionic/malloc_limit.cpp",
@@ -1669,6 +1679,7 @@ cc_library {
         srcs: [ ":libc_sources_static" ],
         cflags: ["-DLIBC_STATIC"],
         whole_static_libs: [
+            "gwp_asan",
             "libc_init_static",
             "libc_common_static",
             "libc_unwind_static",
@@ -1677,6 +1688,7 @@ cc_library {
     shared: {
         srcs: [ ":libc_sources_shared" ],
         whole_static_libs: [
+            "gwp_asan",
             "libc_init_dynamic",
             "libc_common_shared",
         ],
@@ -1880,16 +1892,6 @@ cc_library_headers {
         arm64: {
             export_include_dirs: [
                 "kernel/uapi/asm-arm64",
-            ],
-        },
-        mips: {
-            export_include_dirs: [
-                "kernel/uapi/asm-mips",
-            ],
-        },
-        mips64: {
-            export_include_dirs: [
-                "kernel/uapi/asm-mips",
             ],
         },
         x86: {
@@ -2220,24 +2222,6 @@ ndk_headers {
     license: "NOTICE",
 }
 
-// Not actually used in the NDK, but needed to build AOSP for mips.
-ndk_headers {
-    name: "libc_asm_mips",
-    from: "kernel/uapi/asm-mips",
-    to: "mipsel-linux-android",
-    srcs: ["kernel/uapi/asm-mips/**/*.h"],
-    license: "NOTICE",
-}
-
-// Not actually used in the NDK, but needed to build AOSP for mips64.
-ndk_headers {
-    name: "libc_asm_mips64",
-    from: "kernel/uapi/asm-mips",
-    to: "mips64el-linux-android",
-    srcs: ["kernel/uapi/asm-mips/**/*.h"],
-    license: "NOTICE",
-}
-
 ndk_headers {
     name: "libc_asm_x86",
     from: "kernel/uapi/asm-x86",
@@ -2281,16 +2265,6 @@ llndk_library {
         arm64: {
             export_include_dirs: [
                 "kernel/uapi/asm-arm64",
-            ],
-        },
-        mips: {
-            export_include_dirs: [
-                "kernel/uapi/asm-mips",
-            ],
-        },
-        mips64: {
-            export_include_dirs: [
-                "kernel/uapi/asm-mips",
             ],
         },
         x86: {
@@ -2377,30 +2351,6 @@ cc_object {
     ],
 }
 
-cc_object {
-    name: "libseccomp_gen_syscall_nrs_mips",
-    defaults: ["libseccomp_gen_syscall_nrs_defaults"],
-    cflags: [
-        "-D_MIPS_SIM=_MIPS_SIM_ABI32",
-    ],
-    local_include_dirs: [
-        "kernel/uapi/asm-mips",
-        "kernel/uapi",
-    ],
-}
-
-cc_object {
-    name: "libseccomp_gen_syscall_nrs_mips64",
-    defaults: ["libseccomp_gen_syscall_nrs_defaults"],
-    cflags: [
-        "-D_MIPS_SIM=_MIPS_SIM_ABI64",
-    ],
-    local_include_dirs: [
-        "kernel/uapi/asm-mips",
-        "kernel/uapi",
-    ],
-}
-
 // Generate the C++ policy sources for app and system seccomp-bpf filters.
 python_binary_host {
     name: "genseccomp",
@@ -2460,8 +2410,6 @@ cc_genrule {
         "SYSCALLS.TXT",
         ":libseccomp_gen_syscall_nrs_arm",
         ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_mips",
-        ":libseccomp_gen_syscall_nrs_mips64",
         ":libseccomp_gen_syscall_nrs_x86",
         ":libseccomp_gen_syscall_nrs_x86_64",
     ],
@@ -2494,8 +2442,6 @@ cc_genrule {
         ":generate_app_zygote_blacklist",
         ":libseccomp_gen_syscall_nrs_arm",
         ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_mips",
-        ":libseccomp_gen_syscall_nrs_mips64",
         ":libseccomp_gen_syscall_nrs_x86",
         ":libseccomp_gen_syscall_nrs_x86_64",
     ],
@@ -2503,8 +2449,6 @@ cc_genrule {
     out: [
         "arm64_app_zygote_policy.cpp",
         "arm_app_zygote_policy.cpp",
-        "mips64_app_zygote_policy.cpp",
-        "mips_app_zygote_policy.cpp",
         "x86_64_app_zygote_policy.cpp",
         "x86_app_zygote_policy.cpp",
     ],
@@ -2525,8 +2469,6 @@ cc_genrule {
         "SECCOMP_BLACKLIST_APP.TXT",
         ":libseccomp_gen_syscall_nrs_arm",
         ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_mips",
-        ":libseccomp_gen_syscall_nrs_mips64",
         ":libseccomp_gen_syscall_nrs_x86",
         ":libseccomp_gen_syscall_nrs_x86_64",
     ],
@@ -2534,8 +2476,6 @@ cc_genrule {
     out: [
         "arm64_app_policy.cpp",
         "arm_app_policy.cpp",
-        "mips64_app_policy.cpp",
-        "mips_app_policy.cpp",
         "x86_64_app_policy.cpp",
         "x86_app_policy.cpp",
     ],
@@ -2555,8 +2495,6 @@ cc_genrule {
         "SECCOMP_BLACKLIST_COMMON.TXT",
         ":libseccomp_gen_syscall_nrs_arm",
         ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_mips",
-        ":libseccomp_gen_syscall_nrs_mips64",
         ":libseccomp_gen_syscall_nrs_x86",
         ":libseccomp_gen_syscall_nrs_x86_64",
     ],
@@ -2564,8 +2502,6 @@ cc_genrule {
     out: [
         "arm64_system_policy.cpp",
         "arm_system_policy.cpp",
-        "mips64_system_policy.cpp",
-        "mips_system_policy.cpp",
         "x86_64_system_policy.cpp",
         "x86_system_policy.cpp",
     ],
@@ -2603,6 +2539,7 @@ cc_library {
 cc_defaults {
     name: "libc_scudo_wrapper_defaults",
     srcs: [
+        "bionic/gwp_asan_wrappers.cpp",
         "bionic/heap_tagging.cpp",
         "bionic/malloc_common.cpp",
         "bionic/malloc_common_dynamic.cpp",
@@ -2611,12 +2548,21 @@ cc_defaults {
         "bionic/scudo_wrapper.cpp",
         "bionic/__set_errno.cpp",
     ],
-    cflags: ["-DUSE_SCUDO"],
+    cflags: [
+        "-DUSE_SCUDO",
+        "-fno-emulated-tls", // Required for GWP-ASan.
+    ],
     shared_libs: ["libscudo_wrapper"],
 
-    header_libs: ["libc_headers"],
+    header_libs: [
+        "libc_headers",
+        "gwp_asan_headers",
+    ],
 
-    static_libs: ["libasync_safe"],
+    static_libs: [
+        "libasync_safe",
+        "gwp_asan",
+    ],
 
     arch: {
         arm: {
@@ -2643,7 +2589,6 @@ cc_defaults {
 
 cc_library_shared {
     name: "libc_scudo",
-    defaults: ["libc_scudo_wrapper_defaults"],
     vendor_available: true,
     stl: "none",
     system_shared_libs: [],

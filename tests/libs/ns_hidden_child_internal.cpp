@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 The Android Open Source Project
+ * Copyright (C) 2020 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,4 @@
  * SUCH DAMAGE.
  */
 
-#include <fenv.h>
-
-#define __BIONIC_FENV_INLINE /* Out of line. */
-#include <bits/fenv_inlines_mips.h>
-
-const fenv_t __fe_dfl_env = 0;
+extern "C" void internal_function() {}

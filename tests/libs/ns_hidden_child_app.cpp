@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 The Android Open Source Project
+ * Copyright (C) 2020 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,18 +26,12 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include <stdio.h>
 
-/**
- * @file legacy_fenv_inlines_mips.h
- * @brief Inline MIPS-specific definitions of fenv for old API levels.
- */
+__attribute__((weak)) extern "C" void public_function();
+__attribute__((weak)) extern "C" void internal_function();
 
-#include <sys/cdefs.h>
-
-#if __ANDROID_API__ < 21 && (defined(__mips__) && !defined(__LP64__))
-
-#define __BIONIC_FENV_INLINE static __inline
-#include <bits/fenv_inlines_mips.h>
-
-#endif
+extern "C" void app_function() {
+  printf("public_function is %s\n", public_function == nullptr ? "null" : "non-null");
+  printf("internal_function is %s\n", internal_function == nullptr ? "null" : "non-null");
+}
