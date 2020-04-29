@@ -1717,7 +1717,11 @@ cc_library {
 
     stubs: {
         symbol_file: "libc.map.txt",
-        versions: ["10000"],
+        versions: [
+            "29",
+            "R",
+            "10000",
+        ],
     },
 
     apex_available: [
@@ -1769,6 +1773,7 @@ cc_library_headers {
         "//art:__subpackages__",
         "//bionic:__subpackages__",
         "//frameworks:__subpackages__",
+        "//external/gwp_asan:__subpackages__",
         "//external/perfetto:__subpackages__",
         "//external/scudo:__subpackages__",
         "//system/core/debuggerd:__subpackages__",
