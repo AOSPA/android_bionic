@@ -1047,8 +1047,7 @@ cc_library_static {
         "bionic/dup.cpp",
         "bionic/environ.cpp",
         "bionic/error.cpp",
-        "bionic/eventfd_read.cpp",
-        "bionic/eventfd_write.cpp",
+        "bionic/eventfd.cpp",
         "bionic/exec.cpp",
         "bionic/faccessat.cpp",
         "bionic/fchmod.cpp",
@@ -1139,6 +1138,7 @@ cc_library_static {
         "bionic/signal.cpp",
         "bionic/sigprocmask.cpp",
         "bionic/sleep.cpp",
+        "bionic/socketpair.cpp",
         "bionic/spawn.cpp",
         "bionic/stat.cpp",
         "bionic/stdlib_l.cpp",
@@ -1801,6 +1801,18 @@ cc_library_headers {
     ramdisk_available: true,
     recovery_available: true,
     native_bridge_supported: true,
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    visibility: [
+        ":__subpackages__", // visible to bionic
+        // ... and only to these places (b/152668052)
+        "//external/gwp_asan",
+        "//external/libunwind_llvm",
+        "//system/core/property_service/libpropertyinfoparser",
+        "//system/extras/toolchain-extras",
+    ],
 
     no_libcrt: true,
     stl: "none",
@@ -1934,6 +1946,10 @@ cc_defaults {
     ramdisk_available: true,
     recovery_available: true,
     native_bridge_supported: true,
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
 
     cflags: [
         "-Wno-gcc-compat",
