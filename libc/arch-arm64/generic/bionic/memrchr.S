@@ -1,5 +1,5 @@
 /*
- * strnlen - calculate the length of a string with limit.
+ * memrchr - find last character in a memory zone.
  *
  * Copyright (c) 2020, Arm Limited.
  * SPDX-License-Identifier: MIT
@@ -14,22 +14,26 @@
 #include <private/bionic_asm.h>
 
 #define srcin		x0
-#define cntin		x1
+#define chrin		w1
+#define cntin		x2
 #define result		x0
 
-#define src		x2
-#define synd		x3
-#define	shift		x4
-#define wtmp		w4
-#define tmp		x4
-#define cntrem		x5
+#define src		x3
+#define cntrem		x4
+#define synd		x5
+#define shift		x6
+#define	tmp		x7
+#define wtmp		w7
+#define end		x8
+#define endm1		x9
 
-#define qdata		q0
-#define vdata		v0
-#define vhas_chr	v1
-#define vrepmask	v2
-#define vend		v3
-#define dend		d3
+#define vrepchr		v0
+#define qdata		q1
+#define vdata		v1
+#define vhas_chr	v2
+#define vrepmask	v3
+#define vend		v4
+#define dend		d4
 
 /*
    Core algorithm:
@@ -41,31 +45,32 @@
    bits in the syndrome reflect the order in which things occur in the original
    string, counting trailing zeros identifies exactly which byte matched.  */
 
-ENTRY (strnlen_default)
+ENTRY (memrchr)
 	PTR_ARG (0)
-	SIZE_ARG (1)
-	bic	src, srcin, 15
-	mov	wtmp, 0xf00f
+	add	end, srcin, cntin
+	sub	endm1, end, 1
+	bic	src, endm1, 15
 	cbz	cntin, L(nomatch)
-	ld1	{vdata.16b}, [src], 16
+	ld1	{vdata.16b}, [src]
+	dup	vrepchr.16b, chrin
+	mov	wtmp, 0xf00f
 	dup	vrepmask.8h, wtmp
-	cmeq	vhas_chr.16b, vdata.16b, 0
-	lsl	shift, srcin, 2
+	cmeq	vhas_chr.16b, vdata.16b, vrepchr.16b
+	neg	shift, end, lsl 2
 	and	vhas_chr.16b, vhas_chr.16b, vrepmask.16b
-	addp	vend.16b, vhas_chr.16b, vhas_chr.16b		/* 128->64 */
+	addp	vend.16b, vhas_chr.16b, vhas_chr.16b            /* 128->64 */
 	fmov	synd, dend
-	lsr	synd, synd, shift
+	lsl	synd, synd, shift
 	cbz	synd, L(start_loop)
-L(finish):
-	rbit	synd, synd
+
 	clz	synd, synd
-	lsr	result, synd, 2
-	cmp	cntin, result
-	csel	result, cntin, result, ls
+	sub	result, endm1, synd, lsr 2
+	cmp	cntin, synd, lsr 2
+	csel	result, result, xzr, hi
 	ret
 
 L(start_loop):
-	sub	tmp, src, srcin
+	sub	tmp, end, src
 	subs	cntrem, cntin, tmp
 	b.ls	L(nomatch)
 
@@ -73,40 +78,40 @@ L(start_loop):
 	add	tmp, cntrem, 15
 	tbnz	tmp, 4, L(loop32_2)
 
-	.p2align 5
+	.p2align 4
 L(loop32):
-	ldr	qdata, [src], 16
-	cmeq	vhas_chr.16b, vdata.16b, 0
+	ldr	qdata, [src, -16]!
+	cmeq	vhas_chr.16b, vdata.16b, vrepchr.16b
 	umaxp	vend.16b, vhas_chr.16b, vhas_chr.16b		/* 128->64 */
 	fmov	synd, dend
 	cbnz	synd, L(end)
+
 L(loop32_2):
-	ldr	qdata, [src], 16
+	ldr	qdata, [src, -16]!
 	subs	cntrem, cntrem, 32
-	cmeq	vhas_chr.16b, vdata.16b, 0
+	cmeq	vhas_chr.16b, vdata.16b, vrepchr.16b
 	b.ls	L(end)
 	umaxp	vend.16b, vhas_chr.16b, vhas_chr.16b		/* 128->64 */
 	fmov	synd, dend
 	cbz	synd, L(loop32)
-
 L(end):
 	and	vhas_chr.16b, vhas_chr.16b, vrepmask.16b
 	addp	vend.16b, vhas_chr.16b, vhas_chr.16b		/* 128->64 */
-	sub	src, src, 16
-	mov	synd, vend.d[0]
-	sub	result, src, srcin
-#ifndef __AARCH64EB__
+	fmov	synd, dend
+
+	add	tmp, src, 15
+#ifdef __AARCH64EB__
 	rbit	synd, synd
 #endif
 	clz	synd, synd
-	add	result, result, synd, lsr 2
-	cmp	cntin, result
-	csel	result, cntin, result, ls
+	sub	tmp, tmp, synd, lsr 2
+	cmp	tmp, srcin
+	csel	result, tmp, xzr, hs
 	ret
 
 L(nomatch):
-	mov	result, cntin
+	mov	result, 0
 	ret
 
-END (strnlen_default)
+END (memrchr)
 

@@ -1,29 +1,7 @@
-/*
- * Copyright (c) 2017 ARM Ltd
- * All rights reserved.
+/* memcmp - compare memory
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. The name of the company may not be used to endorse or promote
- *    products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY ARM LTD ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL ARM LTD BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * Copyright (c) 2013-2020, Arm Limited.
+ * SPDX-License-Identifier: MIT
  */
 
 /* Assumptions:
@@ -32,8 +10,6 @@
  */
 
 #include <private/bionic_asm.h>
-
-#define L(l) .L ## l
 
 /* Parameters and result.  */
 #define src1		x0
@@ -51,20 +27,13 @@
 #define tmp1		x7
 #define tmp2		x8
 
-/* Small inputs of less than 8 bytes are handled separately.  This allows the
-   main code to be speed up using unaligned loads since there are now at least
-   8 bytes to be compared.  If the first 8 bytes are equal, align src1.
-   This ensures each iteration does at most one unaligned access even if both
-   src1 and src2 are unaligned, and mutually aligned inputs behave as if
-   aligned.  After the main loop, process the last 16 bytes using unaligned
-   accesses.  */
-
-ENTRY(memcmp)
-.p2align 6
+ENTRY (memcmp)
+	PTR_ARG (0)
+	PTR_ARG (1)
+	SIZE_ARG (2)
 	subs	limit, limit, 8
 	b.lo	L(less8)
 
-	/* Limit >= 8, so check first 8 bytes using unaligned loads.  */
 	ldr	data1, [src1], 8
 	ldr	data2, [src2], 8
 	cmp	data1, data2
@@ -164,4 +133,5 @@ L(byte_loop):
 	sub	result, data1w, data2w
 	ret
 
-END(memcmp)
+END (memcmp)
+

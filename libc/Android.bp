@@ -609,6 +609,7 @@ cc_library_static {
         arm64: {
             exclude_srcs: [
                 "upstream-openbsd/lib/libc/string/memchr.c",
+                "upstream-openbsd/lib/libc/string/memrchr.c",
                 "upstream-openbsd/lib/libc/string/stpcpy.c",
                 "upstream-openbsd/lib/libc/string/strcpy.c",
                 "upstream-openbsd/lib/libc/string/strncmp.c",
@@ -849,9 +850,12 @@ cc_library_static {
                 "arch-arm64/generic/bionic/memcmp.S",
                 "arch-arm64/generic/bionic/memcpy.S",
                 "arch-arm64/generic/bionic/memmove.S",
+                "arch-arm64/generic/bionic/memrchr.S",
                 "arch-arm64/generic/bionic/memset.S",
                 "arch-arm64/generic/bionic/stpcpy.S",
+                "arch-arm64/generic/bionic/strchrnul.S",
                 "arch-arm64/generic/bionic/strcpy.S",
+                "arch-arm64/generic/bionic/strrchr.S",
                 "arch-arm64/generic/bionic/wmemmove.S",
 
                 "arch-arm64/default/bionic/memchr.S",
@@ -878,6 +882,7 @@ cc_library_static {
                 "bionic/__memcpy_chk.cpp",
                 "bionic/strchr.cpp",
                 "bionic/strnlen.c",
+                "bionic/strrchr.cpp",
             ],
             kryo: {
                 srcs: [
@@ -1187,6 +1192,14 @@ cc_library_static {
         // which will be overridden by the actual one in libc.so.
         "bionic/icu_static.cpp",
     ],
+
+    arch: {
+        arm64: {
+            exclude_srcs: [
+                "bionic/strchrnul.cpp",
+            ],
+        },
+    },
 
     multilib: {
         lib32: {
