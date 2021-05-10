@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "15e06f71_0f0eafcb",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000012
+      },
+      "writtenOn": "2021-05-10T19:41:21Z",
+      "side": 1,
+      "message": "when you\u0027re ready, add an explanation that SDLLVM 12 doesn\u0027t need this workaround anymore and make Anay the author since he is the one that noticed this.",
+      "revId": "3b574d7802ce5a2ab199f1a40175aa4c38bb7343",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
