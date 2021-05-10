@@ -1948,8 +1948,7 @@ genrule {
 
 cc_defaults {
     name: "crt_defaults",
-    // Disable sdclang: TODO(b/142476859)
-    sdclang: false,
+    sdclang: true,
     defaults: ["linux_bionic_supported"],
     vendor_available: true,
     ramdisk_available: true,
