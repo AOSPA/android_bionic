@@ -49,7 +49,9 @@ DEFINE_IFUNC_FOR(memcmp) {
 
 typedef void* memcpy_func(void*, const void*, size_t);
 DEFINE_IFUNC_FOR(memcpy) {
-    if (arg->_hwcap & HWCAP_ASIMD) {
+    if (arg->_hwcap2 & HWCAP2_BTI) {
+        RETURN_FUNC(memcpy_func, memcpy_opt);
+    } else if (arg->_hwcap & HWCAP_ASIMD) {
         RETURN_FUNC(memcpy_func, __memcpy_aarch64_simd);
     } else {
         RETURN_FUNC(memcpy_func, __memcpy_aarch64);
@@ -58,7 +60,9 @@ DEFINE_IFUNC_FOR(memcpy) {
 
 typedef void* memmove_func(void*, const void*, size_t);
 DEFINE_IFUNC_FOR(memmove) {
-    if (arg->_hwcap & HWCAP_ASIMD) {
+    if (arg->_hwcap2 & HWCAP2_BTI) {
+        RETURN_FUNC(memmove_func, memmove_opt);
+    } else if (arg->_hwcap & HWCAP_ASIMD) {
         RETURN_FUNC(memmove_func, __memmove_aarch64_simd);
     } else {
         RETURN_FUNC(memmove_func, __memmove_aarch64);
