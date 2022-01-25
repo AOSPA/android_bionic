@@ -16,6 +16,23 @@
       "message": "Just pick latest commit from protonaosp.",
       "revId": "e9174aee7567b5c135100b2aacc9908913bc73af",
       "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c5db441f_777726ee",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000092
+      },
+      "writtenOn": "2022-01-25T05:21:45Z",
+      "side": 1,
+      "message": "Btw, this breaks audio compatibility on op sm8250.",
+      "revId": "e9174aee7567b5c135100b2aacc9908913bc73af",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
     }
   ]
 }
