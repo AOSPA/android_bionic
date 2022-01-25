@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "50b8082a_036a0c53",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000092
+      },
+      "writtenOn": "2022-01-25T05:28:31Z",
+      "side": 1,
+      "message": "SS: https://imgur.com/a/lo6FzXE",
+      "revId": "1c636f190bffea327a5f2156a6f4ce2d86b4cbb6",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
