@@ -33,6 +33,23 @@
       "message": "We can check it again with caf jemalloc instead of proton jemalloc (merged 5.2.1).",
       "revId": "1c636f190bffea327a5f2156a6f4ce2d86b4cbb6",
       "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "d82e2343_f1075868",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000012
+      },
+      "writtenOn": "2022-01-25T06:18:55Z",
+      "side": 1,
+      "message": "I agree, these numbers are not representative because CAF made changes to the scudo repository and they added libbeluga which optimizes performance further.\n\nwe would need to compare to performance on our own platform to have real data. until then, this is blocked. scudo has security advantages compared to jemalloc, so if performance is close, scudo is a better choice.",
+      "revId": "1c636f190bffea327a5f2156a6f4ce2d86b4cbb6",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
     }
   ]
 }
