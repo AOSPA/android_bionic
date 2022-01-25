@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "7b7e465d_12e6fd0d",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000012
+      },
+      "writtenOn": "2022-01-25T06:19:19Z",
+      "side": 1,
+      "message": "we don\u0027t modify hosts, is this worth it for us?",
+      "revId": "69bd2716f2f870b2cc1546199afb7577ee1c9e57",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
