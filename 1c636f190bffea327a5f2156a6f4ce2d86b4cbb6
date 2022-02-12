@@ -67,6 +67,23 @@
       "message": "Unfortunately, Qualcomm being Qualcomm, jemalloc breaks boot on sm8350 due to some hardware daemon failures.\n\nIntroducing possible issues from using another malloc implementation from closed-source parts aren\u0027t worth the hassle imo.",
       "revId": "1c636f190bffea327a5f2156a6f4ce2d86b4cbb6",
       "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "aa5bf068_5ba79076",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-02-12T15:43:31Z",
+      "side": 1,
+      "message": "https://pastebin.com/JVC7wEB0",
+      "revId": "1c636f190bffea327a5f2156a6f4ce2d86b4cbb6",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
     }
   ]
 }
