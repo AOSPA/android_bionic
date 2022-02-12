@@ -50,6 +50,23 @@
       "message": "I agree, these numbers are not representative because CAF made changes to the scudo repository and they added libbeluga which optimizes performance further.\n\nwe would need to compare to performance on our own platform to have real data. until then, this is blocked. scudo has security advantages compared to jemalloc, so if performance is close, scudo is a better choice.",
       "revId": "1c636f190bffea327a5f2156a6f4ce2d86b4cbb6",
       "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5b95276e_bd6cab1c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-02-12T13:43:09Z",
+      "side": 1,
+      "message": "Unfortunately, Qualcomm being Qualcomm, jemalloc breaks boot on sm8350 due to some hardware daemon failures.\n\nIntroducing possible issues from using another malloc implementation from closed-source parts aren\u0027t worth the hassle imo.",
+      "revId": "1c636f190bffea327a5f2156a6f4ce2d86b4cbb6",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
     }
   ]
 }
