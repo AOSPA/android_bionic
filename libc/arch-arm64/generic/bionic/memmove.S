@@ -63,7 +63,7 @@
 ENTRY(wmemmove)
 	lsl	x2, x2, #2
 #else
-ENTRY(memmove_generic)
+ENTRY(memmove)
 #endif
 
 #include "memcpy_base.S"
@@ -71,9 +71,9 @@ ENTRY(memmove_generic)
 #if defined(WMEMMOVE)
 END(wmemmove)
 #else
-END(memmove_generic)
+END(memmove)
 
-ALIAS_SYMBOL(memcpy_generic, memmove_generic)
+ALIAS_SYMBOL(memcpy, memmove)
 #endif
 
 NOTE_GNU_PROPERTY()
