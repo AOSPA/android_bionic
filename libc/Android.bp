@@ -896,10 +896,6 @@ cc_library_static {
         },
         arm64: {
             srcs: [
-                "arch-arm64/kryo785/bionic/__memcpy.S",
-                "arch-arm64/kryo785/bionic/memcpy.S",
-                "arch-arm64/kryo785/bionic/memmove.S",
-
                 "arch-arm64/bionic/__bionic_clone.S",
                 "arch-arm64/bionic/_exit_with_stack_teardown.S",
                 "arch-arm64/bionic/setjmp.S",
