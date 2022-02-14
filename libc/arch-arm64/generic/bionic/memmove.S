@@ -87,7 +87,7 @@
 ENTRY(wmemmove)
 	lsl	count, count, #2
 #else
-ENTRY(memmove_generic)
+ENTRY(memmove)
 #endif
 	sub	tmp1, dstin, src
 	cmp	count, 96
@@ -149,9 +149,9 @@ ENTRY(memmove_generic)
 #if defined(WMEMMOVE)
 END(wmemmove)
 #else
-END(memmove_generic)
+END(memmove)
 
-ALIAS_SYMBOL(memcpy_generic, memmove_generic)
+ALIAS_SYMBOL(memcpy, memmove)
 #endif
 
 NOTE_GNU_PROPERTY()
