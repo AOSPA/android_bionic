@@ -16,6 +16,23 @@
       "message": "It seems like op9\u0027s issue was something else.\n\nThe system is operational with jemalloc.\n\nI\u0027d merge this if this can be guarded with per-device opt-in.",
       "revId": "e2913b4dbda873a395205aa8a6359503b3945200",
       "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "5dc67c0d_02966486",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000012
+      },
+      "writtenOn": "2022-02-22T09:56:12Z",
+      "side": 1,
+      "message": "Blocking\n\nA: seems like there\u0027s still issues with this.\nB: we have to prove that there\u0027s a meaningful improvement in our platform. Between libbeluga and Qualcomm\u0027s changes to the library, we may be close enough.",
+      "revId": "e2913b4dbda873a395205aa8a6359503b3945200",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
     }
   ]
 }
