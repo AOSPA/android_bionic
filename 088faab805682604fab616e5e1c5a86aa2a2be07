@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b367b128_b4fee7dd",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000012
+      },
+      "writtenOn": "2022-02-28T17:53:04Z",
+      "side": 1,
+      "message": "discussed with Vishal, Adithya tested and it works",
+      "revId": "088faab805682604fab616e5e1c5a86aa2a2be07",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
