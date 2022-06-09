@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b2e4fcec_9598407c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2022-06-09T15:15:34Z",
+      "side": 1,
+      "message": "Let\u0027s move the discussion to https://gerrit.aospa.co/c/AOSPA/android_bionic/+/21835",
+      "revId": "29fd14d34895f44837e6a05022fa2b74fa50e89e",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
