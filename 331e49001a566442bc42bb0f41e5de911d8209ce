@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "c9471d8c_4ea51bf1",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000012
+      },
+      "writtenOn": "2022-06-09T08:57:01Z",
+      "side": 1,
+      "message": "the SVE routines at AOR is different than it is at glibc\nhttps://git.linaro.org/toolchain/glibc.git/commit/sysdeps/aarch64?id\u003d9f298bfe1f183804bb54b54ff9071afc0494906c\n\nwill keep an eye on aor",
+      "revId": "331e49001a566442bc42bb0f41e5de911d8209ce",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
