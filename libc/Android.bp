@@ -1331,8 +1331,8 @@ genrule {
     name: "syscalls-arm.S",
     out: ["syscalls-arm.S"],
     srcs: ["SYSCALLS.TXT"],
-    tool_files: [":bionic-gensyscalls"],
-    cmd: "$(location :bionic-gensyscalls) arm $(in) > $(out)",
+    tools: ["gensyscalls"],
+    cmd: "$(location gensyscalls) arm $(in) > $(out)",
     bazel_module: {
         bp2build_available: true,
     }
@@ -1342,8 +1342,8 @@ genrule {
     name: "syscalls-arm64.S",
     out: ["syscalls-arm64.S"],
     srcs: ["SYSCALLS.TXT"],
-    tool_files: [":bionic-gensyscalls"],
-    cmd: "$(location :bionic-gensyscalls) arm64 $(in) > $(out)",
+    tools: ["gensyscalls"],
+    cmd: "$(location gensyscalls) arm64 $(in) > $(out)",
     bazel_module: {
         bp2build_available: true,
     },
@@ -1353,8 +1353,8 @@ genrule {
     name: "syscalls-x86.S",
     out: ["syscalls-x86.S"],
     srcs: ["SYSCALLS.TXT"],
-    tool_files: [":bionic-gensyscalls"],
-    cmd: "$(location :bionic-gensyscalls) x86 $(in) > $(out)",
+    tools: ["gensyscalls"],
+    cmd: "$(location gensyscalls) x86 $(in) > $(out)",
     bazel_module: {
         bp2build_available: true,
     },
@@ -1364,8 +1364,8 @@ genrule {
     name: "syscalls-x86_64.S",
     out: ["syscalls-x86_64.S"],
     srcs: ["SYSCALLS.TXT"],
-    tool_files: [":bionic-gensyscalls"],
-    cmd: "$(location :bionic-gensyscalls) x86_64 $(in) > $(out)",
+    tools: ["gensyscalls"],
+    cmd: "$(location gensyscalls) x86_64 $(in) > $(out)",
     bazel_module: {
         bp2build_available: true,
     },
@@ -1714,8 +1714,8 @@ cc_library {
     },
 
     required: [
-        "tzdata",
-        "tz_version", // Version metadata for tzdata to help debugging.
+        "tzdata_prebuilt",
+        "tz_version_prebuilt", // Version metadata for tzdata to help debugging.
     ],
 
     // Do not pack libc.so relocations; see http://b/20645321 for details.
@@ -1835,8 +1835,8 @@ genrule {
     name: "libc.arm.map",
     out: ["libc.arm.map"],
     srcs: ["libc.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) arm $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) arm $(in) $(out)",
     bazel_module: { bp2build_available: true },
 }
 
@@ -1844,8 +1844,8 @@ genrule {
     name: "libc.arm64.map",
     out: ["libc.arm64.map"],
     srcs: ["libc.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) arm64 $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) arm64 $(in) $(out)",
     bazel_module: { bp2build_available: true },
 }
 
@@ -1853,8 +1853,8 @@ genrule {
     name: "libc.x86.map",
     out: ["libc.x86.map"],
     srcs: ["libc.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) x86 $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) x86 $(in) $(out)",
     bazel_module: { bp2build_available: true },
 }
 
@@ -1862,8 +1862,8 @@ genrule {
     name: "libc.x86_64.map",
     out: ["libc.x86_64.map"],
     srcs: ["libc.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) x86_64 $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) x86_64 $(in) $(out)",
     bazel_module: { bp2build_available: true },
 }
 
@@ -2065,32 +2065,32 @@ genrule {
     name: "libstdc++.arm.map",
     out: ["libstdc++.arm.map"],
     srcs: ["libstdc++.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) arm $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) arm $(in) $(out)",
 }
 
 genrule {
     name: "libstdc++.arm64.map",
     out: ["libstdc++.arm64.map"],
     srcs: ["libstdc++.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) arm64 $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) arm64 $(in) $(out)",
 }
 
 genrule {
     name: "libstdc++.x86.map",
     out: ["libstdc++.x86.map"],
     srcs: ["libstdc++.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) x86 $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) x86 $(in) $(out)",
 }
 
 genrule {
     name: "libstdc++.x86_64.map",
     out: ["libstdc++.x86_64.map"],
     srcs: ["libstdc++.map.txt"],
-    tool_files: [":bionic-generate-version-script"],
-    cmd: "$(location :bionic-generate-version-script) x86_64 $(in) $(out)",
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) x86_64 $(in) $(out)",
 }
 
 // ========================================================
