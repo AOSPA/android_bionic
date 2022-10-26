@@ -60,6 +60,9 @@ double fma(double x, double y, double z) { return __builtin_fma(x, y, z); }
 float ceilf(float x) { return __builtin_ceilf(x); }
 double ceil(double x) { return __builtin_ceil(x); }
 
+double copysign(double x, double y) { return __builtin_copysign(x, y); }
+float copysignf(float x, float y) { return __builtin_copysignf(x, y); }
+
 float floorf(float x) { return __builtin_floorf(x); }
 double floor(double x) { return __builtin_floor(x); }
 
