@@ -72,6 +72,11 @@ double fmax(double x, double y) { return __builtin_fmax(x, y); }
 float fminf(float x, float y) { return __builtin_fminf(x, y); }
 double fmin(double x, double y) { return __builtin_fmin(x, y); }
 
+long lround(double x) { return __builtin_lround(x); }
+long lroundf(float x) { return __builtin_lroundf(x); }
+long long llround(double x) { return __builtin_llround(x); }
+long long llroundf(float x) { return __builtin_llroundf(x); }
+
 float nearbyintf(float x) { return __builtin_nearbyintf(x); }
 double nearbyint(double x) { return __builtin_nearbyint(x); }
 
