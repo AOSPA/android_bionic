@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,13 +28,17 @@
 
 #include <private/bionic_asm.h>
 
-ENTRY(_start)
-  // Force unwinds to end in this function.
-  .cfi_undefined x30
+ENTRY(lrint)
+  fcvt.l.d a0, fa0, dyn
+  ret
+END(lrint)
 
-  mov x0, sp
-  bl __linker_init
+ENTRY(lrintf)
+  fcvt.l.s a0, fa0, dyn
+  ret
+END(lrintf)
 
-  // __linker_init returns the address of the entry point in the main image.
-  br x0
-END(_start)
+// sizeof(long) and sizeof(long long) are the same for riscv64
+ALIAS_SYMBOL(llrint, lrint);
+
+ALIAS_SYMBOL(llrintf, lrintf);
