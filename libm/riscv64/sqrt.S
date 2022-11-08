@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,13 +28,12 @@
 
 #include <private/bionic_asm.h>
 
-ENTRY(_start)
-  // Force unwinds to end in this function.
-  .cfi_undefined x30
+ENTRY(sqrt)
+  fsqrt.d fa0, fa0
+  ret
+END(sqrt)
 
-  mov x0, sp
-  bl __linker_init
-
-  // __linker_init returns the address of the entry point in the main image.
-  br x0
-END(_start)
+ENTRY(sqrtf)
+  fsqrt.s fa0, fa0
+  ret
+END(sqrtf)
