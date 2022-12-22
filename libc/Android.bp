@@ -95,7 +95,6 @@ cc_defaults {
 
     header_libs: [
         "libc_headers",
-        "gwp_asan_headers",
         "liblog_headers",  // needed by bionic/libc/async_safe/include
     ],
     export_header_lib_headers: [
@@ -197,6 +196,9 @@ cc_library_static {
     arch: {
         arm64: {
             srcs: ["arch-arm64/bionic/__set_tls.c"],
+        },
+        riscv64: {
+            srcs: ["arch-riscv64/bionic/__set_tls.c"],
         },
         x86: {
             srcs: [
@@ -662,6 +664,17 @@ cc_library_static {
                 "upstream-openbsd/lib/libc/string/strncmp.c",
             ],
         },
+        riscv64: {
+            srcs: [
+                "arch-riscv64/string/memset_chk.c",
+                "upstream-freebsd/lib/libc/string/memcmp.c",
+                "upstream-freebsd/lib/libc/string/memcpy.c",
+                "upstream-freebsd/lib/libc/string/memmove.c",
+                "upstream-freebsd/lib/libc/string/memset.c",
+                "upstream-openbsd/lib/libc/string/strcmp.c",
+                "upstream-openbsd/lib/libc/string/strlen.c",
+            ],
+        },
         x86: {
             exclude_srcs: [
                 "upstream-openbsd/lib/libc/string/memchr.c",
@@ -929,6 +942,16 @@ cc_library_static {
                     "arch-arm64/generic/bionic/wmemmove.S",
                 ],
             },
+        },
+
+        riscv64: {
+            srcs: [
+                "arch-riscv64/bionic/__bionic_clone.S",
+                "arch-riscv64/bionic/_exit_with_stack_teardown.S",
+                "arch-riscv64/bionic/setjmp.S",
+                "arch-riscv64/bionic/syscall.S",
+                "arch-riscv64/bionic/vfork.S",
+            ],
         },
 
         x86: {
@@ -1319,9 +1342,6 @@ genrule {
     srcs: ["SYSCALLS.TXT"],
     tools: ["gensyscalls"],
     cmd: "$(location gensyscalls) arm $(in) > $(out)",
-    bazel_module: {
-        bp2build_available: true,
-    }
 }
 
 genrule {
@@ -1330,9 +1350,14 @@ genrule {
     srcs: ["SYSCALLS.TXT"],
     tools: ["gensyscalls"],
     cmd: "$(location gensyscalls) arm64 $(in) > $(out)",
-    bazel_module: {
-        bp2build_available: true,
-    },
+}
+
+genrule {
+    name: "syscalls-riscv64.S",
+    out: ["syscalls-riscv64.S"],
+    srcs: ["SYSCALLS.TXT"],
+    tools: ["gensyscalls"],
+    cmd: "$(location gensyscalls) riscv64 $(in) > $(out)",
 }
 
 genrule {
@@ -1341,9 +1366,6 @@ genrule {
     srcs: ["SYSCALLS.TXT"],
     tools: ["gensyscalls"],
     cmd: "$(location gensyscalls) x86 $(in) > $(out)",
-    bazel_module: {
-        bp2build_available: true,
-    },
 }
 
 genrule {
@@ -1352,9 +1374,6 @@ genrule {
     srcs: ["SYSCALLS.TXT"],
     tools: ["gensyscalls"],
     cmd: "$(location gensyscalls) x86_64 $(in) > $(out)",
-    bazel_module: {
-        bp2build_available: true,
-    },
 }
 
 cc_library_static {
@@ -1366,6 +1385,9 @@ cc_library_static {
         },
         arm64: {
             srcs: [":syscalls-arm64.S"],
+        },
+        riscv64: {
+            srcs: [":syscalls-riscv64.S"],
         },
         x86: {
             srcs: [":syscalls-x86.S"],
@@ -1647,7 +1669,6 @@ filegroup {
         "bionic/NetdClient.cpp",
         "arch-common/bionic/crtend_so.S",
     ],
-    bazel_module: { bp2build_available: true },
 }
 
 filegroup {
@@ -1658,7 +1679,6 @@ filegroup {
         "bionic/malloc_common.cpp",
         "bionic/malloc_limit.cpp",
     ],
-    bazel_module: { bp2build_available: true },
 }
 
 filegroup {
@@ -1667,7 +1687,6 @@ filegroup {
         "arch-arm/bionic/exidx_dynamic.c",
         "arch-arm/bionic/atexit_legacy.c",
     ],
-    bazel_module: { bp2build_available: true },
 }
 
 // ========================================================
@@ -1765,6 +1784,15 @@ cc_library {
                 keep_symbols: true,
             },
         },
+        riscv64: {
+            version_script: ":libc.riscv64.map",
+
+            // Leave the symbols in the shared library so that stack unwinders can produce
+            // meaningful name resolution.
+            strip: {
+                keep_symbols: true,
+            },
+        },
         x86: {
             // TODO: This is to work around b/24465209. Remove after root cause is fixed.
             pack_relocations: false,
@@ -1829,7 +1857,6 @@ genrule {
     srcs: ["libc.map.txt"],
     tools: ["generate-version-script"],
     cmd: "$(location generate-version-script) arm $(in) $(out)",
-    bazel_module: { bp2build_available: true },
 }
 
 genrule {
@@ -1838,7 +1865,14 @@ genrule {
     srcs: ["libc.map.txt"],
     tools: ["generate-version-script"],
     cmd: "$(location generate-version-script) arm64 $(in) $(out)",
-    bazel_module: { bp2build_available: true },
+}
+
+genrule {
+    name: "libc.riscv64.map",
+    out: ["libc.riscv64.map"],
+    srcs: ["libc.map.txt"],
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) riscv64 $(in) $(out)",
 }
 
 genrule {
@@ -1847,7 +1881,6 @@ genrule {
     srcs: ["libc.map.txt"],
     tools: ["generate-version-script"],
     cmd: "$(location generate-version-script) x86 $(in) $(out)",
-    bazel_module: { bp2build_available: true },
 }
 
 genrule {
@@ -1856,7 +1889,6 @@ genrule {
     srcs: ["libc.map.txt"],
     tools: ["generate-version-script"],
     cmd: "$(location generate-version-script) x86_64 $(in) $(out)",
-    bazel_module: { bp2build_available: true },
 }
 
 // Headers that only other parts of the platform can include.
@@ -1872,6 +1904,7 @@ cc_library_headers {
         "//external/perfetto:__subpackages__",
         "//external/scudo:__subpackages__",
         "//system/core/debuggerd:__subpackages__",
+        "//system/core/init:__subpackages__",
         "//system/core/libcutils:__subpackages__",
         "//system/memory/libmemunreachable:__subpackages__",
         "//system/unwinding/libunwindstack:__subpackages__",
@@ -1896,7 +1929,6 @@ cc_library_headers {
         "//apex_available:platform",
         "//apex_available:anyapex",
     ],
-    bazel_module: { bp2build_available: true },
 }
 
 cc_library_headers {
@@ -1946,6 +1978,9 @@ cc_library_headers {
         arm64: {
             export_system_include_dirs: ["kernel/uapi/asm-arm64"],
         },
+        riscv64: {
+            export_system_include_dirs: ["kernel/uapi/asm-riscv"],
+        },
         x86: {
             export_system_include_dirs: ["kernel/uapi/asm-x86"],
         },
@@ -1953,7 +1988,6 @@ cc_library_headers {
             export_system_include_dirs: ["kernel/uapi/asm-x86"],
         },
     },
-    bazel_module: { bp2build_available: true },
 }
 
 cc_library_headers {
@@ -2001,7 +2035,6 @@ cc_library_headers {
             export_header_lib_headers: ["libc_llndk_headers"],
         },
     },
-    bazel_module: { bp2build_available: true },
 }
 
 // ========================================================
@@ -2042,6 +2075,9 @@ cc_library {
         arm64: {
             version_script: ":libstdc++.arm64.map",
         },
+        riscv64: {
+            version_script: ":libstdc++.riscv64.map",
+        },
         x86: {
             pack_relocations: false,
             ldflags: ["-Wl,--hash-style=both"],
@@ -2067,6 +2103,14 @@ genrule {
     srcs: ["libstdc++.map.txt"],
     tools: ["generate-version-script"],
     cmd: "$(location generate-version-script) arm64 $(in) $(out)",
+}
+
+genrule {
+    name: "libstdc++.riscv64.map",
+    out: ["libstdc++.riscv64.map"],
+    srcs: ["libstdc++.map.txt"],
+    tools: ["generate-version-script"],
+    cmd: "$(location generate-version-script) riscv64 $(in) $(out)",
 }
 
 genrule {
@@ -2154,8 +2198,6 @@ cc_object {
     srcs: ["arch-common/bionic/crtbrand.S"],
 
     defaults: ["crt_so_defaults"],
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_object {
@@ -2167,8 +2209,6 @@ cc_object {
     objs: [
         "crtbrand",
     ],
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_object {
@@ -2180,8 +2220,6 @@ cc_object {
     srcs: ["arch-common/bionic/crtend_so.S"],
 
     defaults: ["crt_so_defaults"],
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_object {
@@ -2199,8 +2237,6 @@ cc_object {
     defaults: ["crt_defaults"],
     // When using libc.a, we're using the latest library regardless of target API level.
     min_sdk_version: "current",
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_object {
@@ -2223,8 +2259,6 @@ cc_object {
         },
     },
     defaults: ["crt_defaults"],
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_object {
@@ -2238,8 +2272,6 @@ cc_object {
     srcs: ["arch-common/bionic/crtend.S"],
 
     defaults: ["crt_defaults"],
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_library_static {
@@ -2329,6 +2361,14 @@ ndk_headers {
 }
 
 ndk_headers {
+    name: "libc_asm_riscv64",
+    from: "kernel/uapi/asm-riscv",
+    to: "riscv64-linux-android",
+    srcs: ["kernel/uapi/asm-riscv/**/*.h"],
+    license: "NOTICE",
+}
+
+ndk_headers {
     name: "libc_asm_x86",
     from: "kernel/uapi/asm-x86",
     to: "i686-linux-android",
@@ -2350,6 +2390,17 @@ ndk_library {
     first_version: "9",
     // APIs implemented in asm don't have debug info: http://b/190554910.
     allow_untyped_symbols: true,
+    export_header_libs: [
+        "common_libc",
+        "libc_uapi",
+        "libc_kernel_android_uapi_linux",
+        "libc_kernel_android_scsi",
+        "libc_asm_arm",
+        "libc_asm_arm64",
+        "libc_asm_riscv64",
+        "libc_asm_x86",
+        "libc_asm_x86_64",
+    ],
 }
 
 ndk_library {
@@ -2365,7 +2416,6 @@ filegroup {
         "kernel/uapi/linux/input.h",
         "kernel/uapi/linux/input-event-codes.h",
     ],
-    bazel_module: { bp2build_available: true },
 }
 
 // Generate a syscall name / number mapping. These objects are text files
@@ -2391,8 +2441,6 @@ cc_object {
         "kernel/uapi/asm-arm",
         "kernel/uapi",
     ],
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_object {
@@ -2402,8 +2450,15 @@ cc_object {
         "kernel/uapi/asm-arm64",
         "kernel/uapi",
     ],
+}
 
-    bazel_module: { bp2build_available: true },
+cc_object {
+    name: "libseccomp_gen_syscall_nrs_riscv64",
+    defaults: ["libseccomp_gen_syscall_nrs_defaults"],
+    local_include_dirs: [
+        "kernel/uapi/asm-riscv",
+        "kernel/uapi",
+    ],
 }
 
 cc_object {
@@ -2415,8 +2470,6 @@ cc_object {
         "kernel/uapi/asm-x86",
         "kernel/uapi",
     ],
-
-    bazel_module: { bp2build_available: true },
 }
 
 cc_object {
@@ -2428,14 +2481,11 @@ cc_object {
         "kernel/uapi/asm-x86",
         "kernel/uapi",
     ],
-
-    bazel_module: { bp2build_available: true },
 }
 
 filegroup {
     name: "all_kernel_uapi_headers",
     srcs: ["kernel/uapi/**/*.h"],
-    bazel_module: { bp2build_available: true },
 }
 
 
@@ -2448,11 +2498,37 @@ cc_genrule {
 
     srcs: [
         "SYSCALLS.TXT",
-        ":libseccomp_gen_syscall_nrs_arm",
-        ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_x86",
-        ":libseccomp_gen_syscall_nrs_x86_64",
     ],
+
+    arch: {
+        arm: {
+            srcs: [
+                ":libseccomp_gen_syscall_nrs_arm",
+                ":libseccomp_gen_syscall_nrs_arm64",
+            ],
+        },
+        arm64: {
+            srcs: [
+                ":libseccomp_gen_syscall_nrs_arm",
+                ":libseccomp_gen_syscall_nrs_arm64",
+            ],
+        },
+        riscv64: {
+            srcs: [":libseccomp_gen_syscall_nrs_riscv64"],
+        },
+        x86: {
+            srcs: [
+                ":libseccomp_gen_syscall_nrs_x86",
+                ":libseccomp_gen_syscall_nrs_x86_64",
+            ],
+        },
+        x86_64: {
+            srcs: [
+                ":libseccomp_gen_syscall_nrs_x86",
+                ":libseccomp_gen_syscall_nrs_x86_64",
+            ],
+        },
+    },
 
     out: [
         "func_to_syscall_nrs.h",
@@ -2467,13 +2543,8 @@ genrule {
     cmd: "grep -v '^int[ \t]*setresgid' $(in) > $(out)",
 }
 
-cc_genrule {
-    name: "libseccomp_policy_app_zygote_sources",
-    recovery_available: true,
-    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app_zygote $(in)",
-
-    tools: [ "genseccomp" ],
-
+filegroup {
+    name: "seccomp_syscalls_sources_zygote",
     srcs: [
         "SYSCALLS.TXT",
         "SECCOMP_ALLOWLIST_COMMON.TXT",
@@ -2481,27 +2552,11 @@ cc_genrule {
         "SECCOMP_BLOCKLIST_COMMON.TXT",
         "SECCOMP_PRIORITY.TXT",
         ":generate_app_zygote_blocklist",
-        ":libseccomp_gen_syscall_nrs_arm",
-        ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_x86",
-        ":libseccomp_gen_syscall_nrs_x86_64",
-    ],
-
-    out: [
-        "arm64_app_zygote_policy.cpp",
-        "arm_app_zygote_policy.cpp",
-        "x86_64_app_zygote_policy.cpp",
-        "x86_app_zygote_policy.cpp",
     ],
 }
 
-cc_genrule {
-    name: "libseccomp_policy_app_sources",
-    recovery_available: true,
-    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app $(in)",
-
-    tools: [ "genseccomp" ],
-
+filegroup {
+    name: "seccomp_syscalls_sources_app",
     srcs: [
         "SYSCALLS.TXT",
         "SECCOMP_ALLOWLIST_COMMON.TXT",
@@ -2509,56 +2564,242 @@ cc_genrule {
         "SECCOMP_BLOCKLIST_COMMON.TXT",
         "SECCOMP_BLOCKLIST_APP.TXT",
         "SECCOMP_PRIORITY.TXT",
-        ":libseccomp_gen_syscall_nrs_arm",
-        ":libseccomp_gen_syscall_nrs_arm64",
-        ":libseccomp_gen_syscall_nrs_x86",
-        ":libseccomp_gen_syscall_nrs_x86_64",
-    ],
-
-    out: [
-        "arm64_app_policy.cpp",
-        "arm_app_policy.cpp",
-        "x86_64_app_policy.cpp",
-        "x86_app_policy.cpp",
     ],
 }
 
-cc_genrule {
-    name: "libseccomp_policy_system_sources",
-    recovery_available: true,
-    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=system $(in)",
-
-    tools: [ "genseccomp" ],
-
+filegroup {
+    name: "seccomp_syscalls_sources_system",
     srcs: [
         "SYSCALLS.TXT",
         "SECCOMP_ALLOWLIST_COMMON.TXT",
         "SECCOMP_ALLOWLIST_SYSTEM.TXT",
         "SECCOMP_BLOCKLIST_COMMON.TXT",
         "SECCOMP_PRIORITY.TXT",
-        ":libseccomp_gen_syscall_nrs_arm",
-        ":libseccomp_gen_syscall_nrs_arm64",
+    ],
+}
+
+cc_genrule {
+    name: "libseccomp_policy_app_zygote_sources_x86",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app_zygote $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_zygote",
         ":libseccomp_gen_syscall_nrs_x86",
         ":libseccomp_gen_syscall_nrs_x86_64",
     ],
-
     out: [
-        "arm64_system_policy.cpp",
-        "arm_system_policy.cpp",
-        "x86_64_system_policy.cpp",
-        "x86_system_policy.cpp",
+        "x86_app_zygote_policy.cpp",
+        "x86_64_app_zygote_policy.cpp",
     ],
+    enabled: false,
+    arch: {
+        x86: { enabled: true },
+        x86_64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_app_zygote_sources_arm",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app_zygote $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_zygote",
+        ":libseccomp_gen_syscall_nrs_arm",
+        ":libseccomp_gen_syscall_nrs_arm64",
+    ],
+    out: [
+        "arm_app_zygote_policy.cpp",
+        "arm64_app_zygote_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        arm: { enabled: true },
+        arm64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_app_zygote_sources_riscv64",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app_zygote $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_zygote",
+        ":libseccomp_gen_syscall_nrs_riscv64",
+    ],
+    out: [
+        "riscv64_app_zygote_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        riscv64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_app_sources_x86",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_app",
+        ":libseccomp_gen_syscall_nrs_x86",
+        ":libseccomp_gen_syscall_nrs_x86_64",
+    ],
+    out: [
+        "x86_app_policy.cpp",
+        "x86_64_app_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        x86: { enabled: true },
+        x86_64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_app_sources_arm",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_app",
+        ":libseccomp_gen_syscall_nrs_arm",
+        ":libseccomp_gen_syscall_nrs_arm64",
+    ],
+    out: [
+        "arm_app_policy.cpp",
+        "arm64_app_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        arm: { enabled: true },
+        arm64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_app_sources_riscv64",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=app $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_app",
+        ":libseccomp_gen_syscall_nrs_riscv64",
+    ],
+    out: [
+        "riscv64_app_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        riscv64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_system_sources_x86",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=system $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_system",
+        ":libseccomp_gen_syscall_nrs_x86",
+        ":libseccomp_gen_syscall_nrs_x86_64",
+    ],
+    out: [
+        "x86_system_policy.cpp",
+        "x86_64_system_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        x86: { enabled: true },
+        x86_64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_system_sources_arm",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=system $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_system",
+        ":libseccomp_gen_syscall_nrs_arm",
+        ":libseccomp_gen_syscall_nrs_arm64",
+    ],
+    out: [
+        "arm_system_policy.cpp",
+        "arm64_system_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        arm: { enabled: true },
+        arm64: { enabled: true },
+    },
+}
+
+cc_genrule {
+    name: "libseccomp_policy_system_sources_riscv64",
+    recovery_available: true,
+    cmd: "$(location genseccomp) --out-dir=$(genDir) --name-modifier=system $(in)",
+    tools: [ "genseccomp" ],
+    srcs: [
+        ":seccomp_syscalls_sources_system",
+        ":libseccomp_gen_syscall_nrs_riscv64",
+    ],
+    out: [
+        "riscv64_system_policy.cpp",
+    ],
+    enabled: false,
+    arch: {
+        riscv64: { enabled: true },
+    },
 }
 
 cc_library {
     name: "libseccomp_policy",
     recovery_available: true,
     generated_headers: ["func_to_syscall_nrs"],
-    generated_sources: [
-        "libseccomp_policy_app_sources",
-        "libseccomp_policy_app_zygote_sources",
-        "libseccomp_policy_system_sources",
-    ],
+
+    arch: {
+        arm: {
+            generated_sources: [
+               "libseccomp_policy_app_sources_arm",
+               "libseccomp_policy_app_zygote_sources_arm",
+               "libseccomp_policy_system_sources_arm",
+            ],
+        },
+        arm64: {
+            generated_sources: [
+               "libseccomp_policy_app_sources_arm",
+               "libseccomp_policy_app_zygote_sources_arm",
+               "libseccomp_policy_system_sources_arm",
+            ],
+        },
+        riscv64: {
+            generated_sources: [
+               "libseccomp_policy_app_sources_riscv64",
+               "libseccomp_policy_app_zygote_sources_riscv64",
+               "libseccomp_policy_system_sources_riscv64",
+            ],
+        },
+        x86: {
+            generated_sources: [
+               "libseccomp_policy_app_sources_x86",
+               "libseccomp_policy_app_zygote_sources_x86",
+               "libseccomp_policy_system_sources_x86",
+            ],
+        },
+        x86_64: {
+            generated_sources: [
+               "libseccomp_policy_app_sources_x86",
+               "libseccomp_policy_app_zygote_sources_x86",
+               "libseccomp_policy_system_sources_x86",
+            ],
+        },
+    },
 
     srcs: [
         "seccomp/seccomp_policy.cpp",
@@ -2728,4 +2969,54 @@ cc_genrule {
     out: ["libc_musl_sysroot_bionic_arch_headers.zip"],
     tools: ["soong_zip"],
     cmd: "includes=($(in)) && $(location soong_zip) -o $(out) -P include/asm -j -D $$(dirname $${includes[0]})",
+}
+
+cc_genrule {
+    name: "bionic_sysroot_crt_objects",
+    visibility: ["//visibility:private"],
+    out: ["bionic_sysroot_crt_objects.zip"],
+    tools: ["soong_zip"],
+    srcs: [
+        ":crtbegin_dynamic",
+        ":crtbegin_so",
+        ":crtbegin_static",
+        ":crtend_android",
+        ":crtend_so",
+    ],
+    cmd: "$(location soong_zip) -o $(out) -j " +
+        "-f $(location :crtbegin_dynamic) " +
+        "-f $(location :crtbegin_so) " +
+        "-f $(location :crtbegin_static) " +
+        "-f $(location :crtend_android) " +
+        "-f $(location :crtend_so)",
+    dist: {
+        targets: ["bionic_sysroot_crt_objects"],
+    },
+    arch: {
+        arm: {
+            dist: {
+                suffix: "_arm",
+            },
+        },
+        arm64: {
+            dist: {
+                suffix: "_arm64",
+            },
+        },
+        riscv64: {
+            dist: {
+                suffix: "_riscv64",
+            },
+        },
+        x86: {
+            dist: {
+                suffix: "_x86",
+            },
+        },
+        x86_64: {
+            dist: {
+                suffix: "_x86_64",
+            },
+        },
+    },
 }
