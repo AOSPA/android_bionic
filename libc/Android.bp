@@ -2049,6 +2049,11 @@ cc_library {
             version_script: ":libstdc++.x86_64.map",
         },
     },
+    apex_available: [   // savitech patch
+        "//apex_available:platform",
+        "com.android.btservices",
+    ],
+    min_sdk_version: "Tiramisu",
 }
 
 genrule {
