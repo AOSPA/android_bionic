@@ -775,7 +775,7 @@ cc_library_static {
 }
 
 // ========================================================
-// libc_fortify.a - container for our FORITFY
+// libc_fortify.a - container for our FORTIFY
 // implementation details
 // ========================================================
 cc_library_static {
@@ -1469,6 +1469,7 @@ cc_library_static {
 
     whole_static_libs: [
         "gwp_asan",
+        "gwp_asan_crash_handler",
         "libarm-optimized-routines-string",
         "libasync_safe",
         "libc_bionic_ndk",
@@ -1711,6 +1712,7 @@ cc_library {
         cflags: ["-DLIBC_STATIC"],
         whole_static_libs: [
             "gwp_asan",
+            "gwp_asan_crash_handler",
             "libc_init_static",
             "libc_common_static",
             "libc_unwind_static",
@@ -1720,6 +1722,7 @@ cc_library {
         srcs: [ ":libc_sources_shared" ],
         whole_static_libs: [
             "gwp_asan",
+            "gwp_asan_crash_handler",
             "libc_init_dynamic",
             "libc_common_shared",
             "libunwind-exported",
@@ -2325,7 +2328,6 @@ cc_library_static {
     ],
     arch: {
         arm64: {
-            cflags: ["-DHAVE_ASSEMBLER___MEMCPY_CHK"],
             srcs: [
                 "arch-arm64/string/__memcpy_chk.S",
             ],
