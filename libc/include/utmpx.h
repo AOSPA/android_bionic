@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,21 +28,76 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <sys/cdefs.h>
+/**
+ * @file utmpx.h
+ * @brief No-op implementation of POSIX login records.
+ */
 
-// Get the presiding config string, in the following order of priority:
-//   1. Environment variables.
-//   2. System properties, in the order they're specified in sys_prop_names.
-// If neither of these options are specified (or they're both an empty string),
-// this function returns false. Otherwise, it returns true, and the presiding
-// options string is written to the `options` buffer of size `size`. It will
-// store a pointer to either env_var_name, or into the relevant entry of
-// sys_prop_names into choicen_source, indiciating which value was used. If
-// this function returns true, `options` is guaranteed to be null-terminated.
-// `options_size` should be at least PROP_VALUE_MAX.
-__LIBC_HIDDEN__ bool get_config_from_env_or_sysprops(const char* env_var_name,
-                                                     const char* const* sys_prop_names,
-                                                     size_t sys_prop_names_size, char* options,
-                                                     size_t options_size,
-                                                     const char** chosen_source);
+#include <sys/cdefs.h>
+#include <sys/types.h>
+#include <time.h>
+
+#define EMPTY         0
+#define RUN_LVL       1
+#define BOOT_TIME     2
+#define NEW_TIME      3
+#define OLD_TIME      4
+#define INIT_PROCESS  5
+#define LOGIN_PROCESS 6
+#define USER_PROCESS  7
+#define DEAD_PROCESS  8
+#define ACCOUNTING    9
+
+struct utmpx {
+  short ut_type;
+  pid_t ut_pid;
+  char ut_line[32];
+  char ut_id[4];
+  char ut_user[32];
+  char ut_host[256];
+
+  struct {
+    short e_termination;
+    short e_exit;
+  } ut_exit;
+
+  long ut_session;
+  struct timeval ut_tv;
+
+  int32_t ut_addr_v6[4];
+  char unused[20];
+};
+
+__BEGIN_DECLS
+
+/**
+ * Does nothing.
+ */
+void setutxent(void) __RENAME(setutent);
+
+/**
+ * Does nothing and returns null.
+ */
+struct utmpx* _Nullable getutxent(void) __RENAME(getutent);
+
+/**
+ * Does nothing and returns null.
+ */
+struct utmpx* _Nullable getutxid(const struct utmpx* _Nonnull __entry) __RENAME(getutent);
+
+/**
+ * Does nothing and returns null.
+ */
+struct utmpx* _Nullable getutxline(const struct utmpx* _Nonnull __entry) __RENAME(getutent);
+
+/**
+ * Does nothing and returns null.
+ */
+struct utmpx* _Nullable pututxline(const struct utmpx* _Nonnull __entry) __RENAME(pututline);
+
+/**
+ * Does nothing.
+ */
+void endutxent(void) __RENAME(endutent);
+
+__END_DECLS

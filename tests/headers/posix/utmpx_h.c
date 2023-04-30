@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,23 +26,38 @@
  * SUCH DAMAGE.
  */
 
-#pragma once
+#include <utmpx.h>
 
-#include <stdint.h>
-#include <sys/cdefs.h>
+#include "header_checks.h"
 
-// Get the presiding config string, in the following order of priority:
-//   1. Environment variables.
-//   2. System properties, in the order they're specified in sys_prop_names.
-// If neither of these options are specified (or they're both an empty string),
-// this function returns false. Otherwise, it returns true, and the presiding
-// options string is written to the `options` buffer of size `size`. It will
-// store a pointer to either env_var_name, or into the relevant entry of
-// sys_prop_names into choicen_source, indiciating which value was used. If
-// this function returns true, `options` is guaranteed to be null-terminated.
-// `options_size` should be at least PROP_VALUE_MAX.
-__LIBC_HIDDEN__ bool get_config_from_env_or_sysprops(const char* env_var_name,
-                                                     const char* const* sys_prop_names,
-                                                     size_t sys_prop_names_size, char* options,
-                                                     size_t options_size,
-                                                     const char** chosen_source);
+static void utmpx_h() {
+  TYPE(struct utmpx);
+  STRUCT_MEMBER_ARRAY(struct utmpx, char/*[]*/, ut_user);
+  STRUCT_MEMBER_ARRAY(struct utmpx, char/*[]*/, ut_id);
+  STRUCT_MEMBER_ARRAY(struct utmpx, char/*[]*/, ut_line);
+  STRUCT_MEMBER(struct utmpx, pid_t, ut_pid);
+  STRUCT_MEMBER(struct utmpx, short, ut_type);
+#if !defined(__GLIBC__)
+  // POSIX says struct timeval, but glibc has an anonymous struct.
+  STRUCT_MEMBER(struct utmpx, struct timeval, ut_tv);
+#endif
+
+  TYPE(pid_t);
+  TYPE(struct timeval);
+
+  MACRO(EMPTY);
+  MACRO(BOOT_TIME);
+  MACRO(OLD_TIME);
+  MACRO(NEW_TIME);
+  MACRO(USER_PROCESS);
+  MACRO(INIT_PROCESS);
+  MACRO(LOGIN_PROCESS);
+  MACRO(DEAD_PROCESS);
+
+  FUNCTION(endutxent, void (*f)(void));
+  FUNCTION(getutxent, struct utmpx* (*f)(void));
+  FUNCTION(getutxid, struct utmpx* (*f)(const struct utmpx*));
+  FUNCTION(getutxline, struct utmpx* (*f)(const struct utmpx*));
+  FUNCTION(pututxline, struct utmpx* (*f)(const struct utmpx*));
+  FUNCTION(setutxent, void (*f)(void));
+}
