@@ -97,6 +97,9 @@ cc_defaults {
         malloc_low_memory: {
             cflags: ["-UUSE_SCUDO"],
         },
+        malloc_use_jemalloc: {
+            cflags: ["-UUSE_SCUDO"],
+        },
     },
 
     lto: {
@@ -180,6 +183,16 @@ cc_defaults {
     header_libs: ["gwp_asan_headers"],
     product_variables: {
         malloc_low_memory: {
+            cflags: ["-UUSE_SCUDO"],
+            whole_static_libs: [
+                "libjemalloc5",
+                "libc_jemalloc_wrapper",
+            ],
+            exclude_static_libs: [
+                "libscudo",
+            ],
+        },
+        malloc_use_jemalloc: {
             cflags: ["-UUSE_SCUDO"],
             whole_static_libs: [
                 "libjemalloc5",
