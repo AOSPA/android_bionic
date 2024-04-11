@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "3dea263f_09c9a56c",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000062
+      },
+      "writtenOn": "2024-04-11T13:02:39Z",
+      "side": 1,
+      "message": "We had trouble using jemalloc as several vendor binaries were malfunctioning.\n\nWith this, the device-tree maintainers can now find the offending services and fix the issue.",
+      "revId": "82a0f64e5ec8448d9d7e7bfcaa436bd8778043c1",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
