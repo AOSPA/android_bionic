@@ -68,6 +68,8 @@ typedef void* memcpy_func(void*, const void*, size_t);
 DEFINE_IFUNC_FOR(memcpy) {
     if (arg->_hwcap2 & HWCAP2_MOPS) {
         RETURN_FUNC(memcpy_func, __memmove_aarch64_mops);
+    } else if (arg->_hwcap & HWCAP_SVE) {
+        RETURN_FUNC(memcpy_func_t, __memcpy_aarch64_sve);
     } else if (__bionic_is_oryon(arg->_hwcap)) {
         RETURN_FUNC(memcpy_func, __memcpy_aarch64_nt);
     } else if (arg->_hwcap & HWCAP_ASIMD) {
