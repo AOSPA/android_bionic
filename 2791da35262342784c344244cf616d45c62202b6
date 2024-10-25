@@ -1,4 +1,22 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "c2aa3571_8b2f5956",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000696
+      },
+      "writtenOn": "2024-10-25T06:07:15Z",
+      "side": 1,
+      "message": "How does it \"match arm-optimized-routines\"? I can\u0027t see any 64B alignment there. Instead, I found this comment: https://github.com/ARM-software/optimized-routines/pull/35#discussion_r550119073",
+      "revId": "2791da35262342784c344244cf616d45c62202b6",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ],
   "submitRequirementResults": []
 }
