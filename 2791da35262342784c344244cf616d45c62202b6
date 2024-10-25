@@ -16,6 +16,24 @@
       "message": "How does it \"match arm-optimized-routines\"? I can\u0027t see any 64B alignment there. Instead, I found this comment: https://github.com/ARM-software/optimized-routines/pull/35#discussion_r550119073",
       "revId": "2791da35262342784c344244cf616d45c62202b6",
       "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "f03bdb82_afbf46df",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000579
+      },
+      "writtenOn": "2024-10-25T07:16:44Z",
+      "side": 1,
+      "message": "It\u0027s already merged in AOSP main, you can check comments at 1198422: libc: Set __bionic_asm_align to 64 for arm and arm64 | https://android-review.googlesource.com/c/platform/bionic/+/1198422 for more info",
+      "parentUuid": "c2aa3571_8b2f5956",
+      "revId": "2791da35262342784c344244cf616d45c62202b6",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
     }
   ],
   "submitRequirementResults": []
