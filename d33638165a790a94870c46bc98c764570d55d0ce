@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "98daaf0b_7562469f",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 1000012
+      },
+      "writtenOn": "2026-04-03T19:54:00Z",
+      "side": 1,
+      "message": "we don\u0027t have any SVE devices at the moment.  I think maybe hold off on merging until after we do.",
+      "revId": "d33638165a790a94870c46bc98c764570d55d0ce",
+      "serverId": "3162e3d8-d894-470e-abd9-724f7b0effad"
+    }
+  ]
+}
